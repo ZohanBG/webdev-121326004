@@ -12,7 +12,7 @@ See `SPEC.md` for goals, non-goals and acceptance criteria.
 - Run: 
 - Test: 
 - Coverage: 
-- MCP server: 
+- MCP server: `npm run mcp` (starts `node mcp-server/server.js`); self-check: `node mcp-server/check.mjs -- node mcp-server/server.js`
 
 ## Conventions
 <!-- Folder layout, naming, where business rules live, how errors are returned to the client. -->
