@@ -39,8 +39,47 @@ It prints one line per check. Fix the failures yourself: the agent may explain a
 ## How to start it
 <!-- The exact command, so the lecturer can run your server too. -->
 
+```bash
+npm run --silent mcp
+# or, without npm
+node mcp-server/server.js
+```
+
+It speaks MCP over stdio: one JSON-RPC message per line on stdin, one reply per line on stdout. Logs go to stderr only. Self-check: `node mcp-server/check.mjs -- node mcp-server/server.js` (12/12).
+
 ## Session transcript
 <!-- Paste one full session: initialize, the reply, tools/list, one good tools/call, one that fails. -->
+
+One session, with the five messages sent through a single pipe. `→` is what the client sent (the server echoes it to stderr as `got:`), and `←` is the server's reply on stdout.
+
+**1. initialize**
+```
+→ {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"me","version":"1.0.0"}}}
+← {"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-11-25","capabilities":{"tools":{}},"serverInfo":{"name":"lectures","version":"1.0.0"}}}
+```
+
+**2. notifications/initialized** (no `id`, so no reply)
+```
+→ {"jsonrpc":"2.0","method":"notifications/initialized"}
+```
+
+**3. tools/list**
+```
+→ {"jsonrpc":"2.0","id":2,"method":"tools/list"}
+← {"jsonrpc":"2.0","id":2,"result":{"tools":[{"name":"find_lecture","description":"Return the title and topics of one course lecture, looked up by its number (1 to 10). Use it when the user asks what a specific lecture covers. Returns one line of text.","inputSchema":{"type":"object","properties":{"number":{"type":"integer","minimum":1,"maximum":10,"description":"Lecture number, 1 to 10"}},"required":["number"]}},{"name":"search_lectures","description":"Search all course lectures for a keyword (case-insensitive) in their titles and topics. Use it when the user asks WHICH lecture covers a subject, e.g. \"where do we talk about CSRF?\". Returns one line per matching lecture, or a message that nothing matched.","inputSchema":{"type":"object","properties":{"query":{"type":"string","minLength":1,"description":"Word or phrase to look for, e.g. \"REST\""}},"required":["query"]}}]}}
+```
+
+**4. tools/call that works**
+```
+→ {"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"find_lecture","arguments":{"number":5}}}
+← {"jsonrpc":"2.0","id":3,"result":{"content":[{"type":"text","text":"Lecture 5: What the agent built, part 1. Topics: HTTP, REST vs GraphQL, data modeling, ORM, layers"}],"isError":false}}
+```
+
+**5. tools/call that fails.** The tool ran, so this is a result with `isError: true` and not a JSON-RPC error. The model reads the text and can try again.
+```
+→ {"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"find_lecture","arguments":{"number":99}}}
+← {"jsonrpc":"2.0","id":4,"result":{"content":[{"type":"text","text":"There is no lecture 99. The course has lectures 1 to 10."}],"isError":true}}
+```
 
 ## The description experiment
 <!-- Three sentences: what you changed in the description, whether the model chose the tool differently, and why you think so. -->
