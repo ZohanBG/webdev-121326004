@@ -4,25 +4,31 @@ Read this file at the start of every session. Keep it short and correct; update 
 
 ## Project
 <!-- One or two sentences: what the app does and for whom. Link SPEC.md. -->
+LabSpot: TU-Sofia students see which lab workstations are free on a day, book a 2-hour block and cancel their own booking; lab staff manage labs and workstations and see every booking.
 See `SPEC.md` for goals, non-goals and acceptance criteria.
 
 ## Commands
 <!-- How to install, run, test. Keep these exact and working. -->
-- Install: 
-- Run: 
-- Test: 
-- Coverage: 
-- MCP server: `npm run mcp` (starts `node mcp-server/server.js`); self-check: `node mcp-server/check.mjs -- node mcp-server/server.js`
+- Install: `npm install`
+- Database: `npm run migrate`, then `npm run seed` (seed accounts use `SEED_PASSWORD`)
+- Run: `npm start` (http://localhost:3000, needs `DATABASE_URL` and `SESSION_SECRET`)
+- Test: `npm test` (Vitest; never calls the model provider)
+- Coverage: `npm run coverage`
+- MCP server: `npm run --silent mcp` (starts `node mcp-server/server.js`; `--silent` keeps npm's own output off stdout); self-check: `node mcp-server/check.mjs -- node mcp-server/server.js`
 
 ## Conventions
 <!-- Folder layout, naming, where business rules live, how errors are returned to the client. -->
+- Layout: `src/routes/` (HTTP), `src/services/` (rules), `src/data/` (SQL), `public/` (HTML, CSS, JS, `tokens.css`), `migrations/` (numbered SQL files), `test/`.
+- Every rule (roles, ownership, booking limits, time blocks, the suggestion limit) lives in `src/services/`, never in a route handler or a page.
+- Errors reach the client as a status code (400 invalid input, 401 not signed in, 403 not allowed, 404 not found, 409 conflict) and a JSON body `{ "error": "<readable sentence>" }`; pages show that sentence, never raw JSON. Use the exact messages written in `SPEC.md`.
+- Times are stored in UTC and shown in Europe/Sofia.
 
 ## Layers
 <!-- Fill in the file or folder for each layer. -->
 Requests arrive two ways and both end in the same place:
 
-- HTTP route handler → service → data access → database
-- MCP tool → **the same service** → data access → database
+- HTTP route handler (`src/routes/`) → service (`src/services/`) → data access (`src/data/`) → PostgreSQL (`DATABASE_URL`, schema in `migrations/`)
+- MCP tool (`mcp-server/`) → **the same service** (`src/services/`) → data access → database
 
 A route handler reads the request and turns a result into a status code. A service holds the
 rules and knows nothing about HTTP or about MCP. Only the data layer writes SQL. An MCP tool
@@ -30,8 +36,8 @@ that talks to the database directly is a second, unguarded way into your data: n
 
 ## The model feature
 <!-- Provider, env var, and the call site. -->
-- The provider is named in exactly one file: 
-- The key comes from an environment variable and is never committed or logged.
+- The provider is named in exactly one file: `src/services/suggest.js` (Anthropic SDK, model id from `CLAUDE_MODEL`).
+- The key comes from an environment variable (`ANTHROPIC_API_KEY`) and is never committed or logged.
 - Every call has a timeout and a deterministic fallback, so the app still works when the provider is down or rate-limited.
 - The model's output is re-checked against real data before anything is saved or shown.
 - Tests never call the provider: they pass in a fake client.
