@@ -29,7 +29,7 @@ Lab booking.
 - Node 22 with Express, PostgreSQL (Neon in production), plain HTML, CSS and JavaScript in the UI. Tests with Vitest and v8 coverage.
 - Three layers that never skip each other: `routes/` → `services/` → `data/`. No SQL outside `src/data/`. Every rule (ownership, limits, roles) is checked in `src/services/`, never in a route handler.
 - Every schema change is a new numbered migration in `migrations/`; a migration that has run is never edited. Foreign keys use `ON DELETE RESTRICT`: the app never deletes labs or workstations, it takes them out of service, so booking history is never lost.
-- Passwords are stored only as a bcrypt hash, never as readable text. Sessions are server-side, the cookie is `HttpOnly`, `SameSite=Lax`, and `Secure` in production.
+- Passwords are stored only as a bcrypt hash, never as readable text. Sessions are server-side and the database stores only a hash of the session id, never the cookie value itself; the cookie is `HttpOnly`, `SameSite=Lax`, and `Secure` in production.
 - No secret is ever in a file in the repo: keys go in Codespaces secrets and the hosting settings; `.env.example` holds names only. Seed account passwords come from `SEED_PASSWORD`.
 - Time blocks are fixed: Monday to Friday, 08:00–20:00, six 2-hour blocks, in Europe/Sofia time; times are stored as UTC. Deliberate decision: six fixed blocks keep the day view readable at 380 px and make "one booking per block" a simple unique index, instead of overlap checks on free-form times.
 - A block is "upcoming" until its start time. Once a block has started it can no longer be booked or cancelled.
@@ -113,11 +113,14 @@ Lab booking.
 - [AC-30] The MCP tool `cancel_booking` called with a staff user's token and a student's upcoming booking id cancels it: the row has status `cancelled` and `cancelled_by` holds the staff user's id, the same as AC-28 in the web UI.
 
 ### Slice 1: sign-in and the labs list
+<!-- Sign-in with seeded accounts only: sign-up, Google and roles beyond the seed are not part of this slice. -->
+
 - [AC-23] A visitor who opens `/labs` without signing in lands on `/login`; `curl -i http://localhost:3000/api/labs` without a session returns 401 and no lab names.
 - [AC-24] After signing in with a seeded student account, `/labs` shows the three seeded labs, each with its name, room and number of active workstations (one of them shows 0), read from the `labs` and `workstations` tables.
 - [AC-25] Deleting the seeded lab that has no workstations from `labs` in the database and reloading `/labs` removes that lab from the screen.
-- [AC-26] Signing in with a wrong password shows "Wrong email or password." and sets no session cookie; every value in `users.password_hash` starts with `$2`.
+- [AC-26] Signing in with a wrong password gets 401, shows "Wrong email or password." and sets no session cookie; every value in `users.password_hash` starts with `$2`.
 - [AC-27] After pressing Sign out, opening `/labs` lands on `/login` again.
+- [AC-31] Signing in with an empty email or an empty password gets 400 and "Enter your email and password.", and sets no session cookie.
 
 ## Traceability
 <!-- Filled in from Exercise 3 onward: each AC id, and the test that names it. -->
@@ -127,3 +130,6 @@ Lab booking.
 
 ## Spec vs result
 <!-- After the agent builds the slice: which criteria passed, which it missed or reinterpreted, and what you changed in this spec because of it. -->
+- Passed: not checked yet. Slice 1 is in progress (migration and seed done, sign-in written but untested, labs list not built). AC-23 to AC-27 get checked one by one when the slice is finished, and this line is updated then.
+- Reinterpreted: AC-26 did not say which status a wrong password gets; the agent chose 401. The spec did not say what a sign-in with an empty field gets; the agent chose 400. The session was stored as a hash of the cookie value, which the spec did not mention. Sign-up is on the `/login` screen in UI but is not in slice 1, so the agent left it out.
+- Changed: AC-26 now names 401, the new AC-31 covers the empty field with 400, Constraints now say the session id is stored only as a hash, and the slice 1 heading says sign-up is not part of it.
