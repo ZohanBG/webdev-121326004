@@ -14,6 +14,12 @@
   </header>
   <main>
     <h1>Labs</h1>
+    <p id="labs-status" class="muted" role="status">Loading labs…</p>
+    <div id="labs-error" class="message error" role="alert" hidden>
+      <p id="labs-error-text"></p>
+      <button id="labs-retry" class="secondary" type="button">Try again</button>
+    </div>
+    <ul id="labs" class="lab-list" hidden></ul>
   </main>
 </body>
 </html>

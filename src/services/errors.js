@@ -14,3 +14,9 @@ export class WrongCredentials extends ServiceError {
     super('Wrong email or password.');
   }
 }
+
+export class NotSignedIn extends ServiceError {
+  constructor() {
+    super('Sign in first.');
+  }
+}

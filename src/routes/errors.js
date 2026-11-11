@@ -1,10 +1,11 @@
 // The only place that turns a service error into a status code.
 // Every error reaches the client as { "error": "<readable sentence>" }.
-import { InvalidInput, WrongCredentials } from '../services/errors.js';
+import { InvalidInput, WrongCredentials, NotSignedIn } from '../services/errors.js';
 
 const STATUS = [
   [InvalidInput, 400],
   [WrongCredentials, 401],
+  [NotSignedIn, 401],
 ];
 
 export function notFound(req, res) {

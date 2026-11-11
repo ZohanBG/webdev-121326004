@@ -1,7 +1,8 @@
 import { join } from 'node:path';
 import express from 'express';
-import { loadUser } from './routes/session.js';
+import { loadUser, requireSignIn } from './routes/session.js';
 import authRoutes from './routes/auth.js';
+import labRoutes from './routes/labs.js';
 import pageRoutes from './routes/pages.js';
 import { notFound, errorHandler } from './routes/errors.js';
 
@@ -16,6 +17,7 @@ export function createApp({ db, secureCookies = false }) {
   app.use(loadUser);
 
   app.use('/api/auth', authRoutes);
+  app.use('/api/labs', requireSignIn, labRoutes);
   app.use('/api', notFound);
 
   app.use(pageRoutes);

@@ -26,6 +26,12 @@ export function clearSessionCookie(req, res) {
   res.clearCookie(COOKIE, cookieOptions(req));
 }
 
+/** 401 for an API call without a session, before any service is called. */
+export function requireSignIn(req, res, next) {
+  if (!req.user) return res.status(401).json({ error: 'Sign in first.' });
+  next();
+}
+
 /** Puts the signed-in user, or null, on req.user for every request. */
 export async function loadUser(req, res, next) {
   const token = readCookie(req.headers.cookie, COOKIE);
