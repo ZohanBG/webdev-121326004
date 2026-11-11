@@ -1,15 +1,16 @@
 // Development data: one student, one staff member, three labs (one with no workstations).
 //   npm run seed
 // Both accounts use SEED_PASSWORD from .env. Runs only on a database with no users yet.
-const bcrypt = require('bcryptjs');
-const { createPool, transaction } = require('../src/data/db');
+import { pathToFileURL } from 'node:url';
+import bcrypt from 'bcryptjs';
+import { createPool, transaction } from '../src/data/db.js';
 
-const USERS = [
+export const USERS = [
   { email: 'student@labspot.test', role: 'student' },
   { email: 'staff@labspot.test', role: 'staff' },
 ];
 
-const LABS = [
+export const LABS = [
   {
     name: 'Networks Lab',
     room: '2140',
@@ -32,7 +33,7 @@ const LABS = [
   { name: 'Project Room', room: '3302', workstations: [] },
 ];
 
-async function seed(db, { password }) {
+export async function seed(db, { password }) {
   if (typeof password !== 'string' || password.length < 10) {
     throw new Error('SEED_PASSWORD must be set in .env and be at least 10 characters long.');
   }
@@ -59,7 +60,7 @@ async function seed(db, { password }) {
   });
 }
 
-if (require.main === module) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const pool = createPool();
   seed(pool, { password: process.env.SEED_PASSWORD })
     .then((r) => console.log(r.skipped
@@ -71,5 +72,3 @@ if (require.main === module) {
     })
     .finally(() => pool.end());
 }
-
-module.exports = { seed, USERS, LABS };

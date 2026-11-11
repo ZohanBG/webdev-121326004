@@ -1,0 +1,4 @@
+{
+  "//": "The Exercise 1 server is CommonJS (require); the app around it is ES modules.",
+  "type": "commonjs"
+}
