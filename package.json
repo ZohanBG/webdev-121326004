@@ -1,13 +1,19 @@
 {
   "name": "my-project",
   "version": "1.0.0",
-  "description": "This repository is your workspace for the whole course: Exercise 1 in `mcp-server/`, and your project (Exercises 2–5) in the rest of it. Everything runs in your browser through GitHub Codespaces, so nothing needs to be installed on your laptop.",
-  "main": "index.js",
+  "description": "LabSpot: book a workstation in the TU-Sofia labs.",
   "directories": {
     "doc": "docs"
   },
+  "engines": {
+    "node": ">=22.9"
+  },
   "scripts": {
-    "test": "node mcp-server/check.mjs -- node mcp-server/server.js",
+    "start": "node --env-file-if-exists=.env src/server.js",
+    "migrate": "node --env-file-if-exists=.env scripts/migrate.js",
+    "seed": "node --env-file-if-exists=.env scripts/seed.js",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
     "mcp": "node mcp-server/server.js"
   },
   "repository": {
@@ -22,5 +28,15 @@
     "url": "https://github.com/ZohanBG/webdev-121326004/issues"
   },
   "homepage": "https://github.com/ZohanBG/webdev-121326004#readme",
-  "private": true
+  "private": true,
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "express": "^5.3.0",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.16",
+    "@vitest/coverage-v8": "^5.1.0",
+    "vitest": "^5.1.0"
+  }
 }

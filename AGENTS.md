@@ -10,9 +10,10 @@ See `SPEC.md` for goals, non-goals and acceptance criteria.
 ## Commands
 <!-- How to install, run, test. Keep these exact and working. -->
 - Install: `npm install`
-- Database: `npm run migrate`, then `npm run seed` (seed accounts use `SEED_PASSWORD`)
-- Run: `npm start` (http://localhost:3000, needs `DATABASE_URL` and `SESSION_SECRET`)
-- Test: `npm test` (Vitest; never calls the model provider)
+- Database server (development): `docker start labspot-db` (PostgreSQL 17 in Docker, created once with `docker run --name labspot-db -e POSTGRES_USER=labspot -e POSTGRES_PASSWORD=<password> -e POSTGRES_DB=labspot -p 5432:5432 -d postgres:17`)
+- Database: `npm run migrate`, then `npm run seed` (seed accounts use `SEED_PASSWORD`; both read `.env`)
+- Run: `npm start` (http://localhost:3000, needs `DATABASE_URL` in `.env`)
+- Test: `npm test` (Vitest on an in-process PostgreSQL, PGlite: no database server and no model provider needed)
 - Coverage: `npm run coverage`
 - MCP server: `npm run --silent mcp` (starts `node mcp-server/server.js`; `--silent` keeps npm's own output off stdout); self-check: `node mcp-server/check.mjs -- node mcp-server/server.js`
 
