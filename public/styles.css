@@ -288,3 +288,40 @@ textarea {
 .or { margin: var(--space-3) 0; }
 .methods { list-style: none; margin: 0 0 var(--space-4); padding: 0; display: grid; gap: var(--space-2); }
 .methods li { display: flex; justify-content: space-between; gap: var(--space-3); }
+
+/* ---- feature chips (day view filter, staff form) ---- */
+
+.feature-filter { margin: var(--space-4) 0; }
+.filter-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.filter-head h2 { margin: 0; }
+
+.chip-groups { display: grid; gap: var(--space-3); margin: var(--space-3) 0; }
+.chip-group-title { margin: 0 0 var(--space-1); font-size: var(--font-size-sm); font-weight: 700; color: var(--color-muted); }
+.chip-row { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+.chip-toggle {
+  min-height: var(--touch-target);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 400;
+  text-align: left;
+}
+.chip-toggle:hover:not(:disabled) { background: var(--color-yours-bg); }
+/* pressed is shown by a tick and a filled chip, not by colour alone */
+.chip-toggle[aria-pressed="true"] { background: var(--color-primary); border-color: var(--color-primary); color: var(--color-on-primary); font-weight: 600; }
+.chip-toggle[aria-pressed="true"]::before { content: "✓ "; }
+.chip-toggle[aria-pressed="true"]:hover:not(:disabled) { background: var(--color-primary-hover); }
+
+.field-label { font-weight: 600; margin: 0 0 var(--space-1); }
+.features-picker { margin-bottom: var(--space-4); }
+.feature-editor { margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px dashed var(--color-border); }
+
+/* ---- the suggestion's two parts: facts and the model's words ---- */
+
+.suggestion-part { margin: var(--space-3) 0; padding: var(--space-3); border-radius: var(--radius); background: var(--color-surface); }
+.suggestion-part h3 { margin: 0; font-size: var(--font-size-base); }
+.part-note { margin: 0 0 var(--space-2); font-size: var(--font-size-sm); }
+.suggestion-reason { margin: 0; font-style: italic; }

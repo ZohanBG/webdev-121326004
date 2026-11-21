@@ -70,9 +70,9 @@ describe('workstations', () => {
 
   test('AC-12 a feature outside the fixed list is refused, and no row is added', async () => {
     await expect(addWorkstation(db, staff, { labId: await labId('Project Room'), label: 'PR-01', features: ['quiet', 'laser'] }))
-      .rejects.toMatchObject({ name: 'InvalidInput', message: 'features may only contain quiet, dual-monitor and gpu.' });
+      .rejects.toMatchObject({ name: 'InvalidInput', message: 'features may only contain ids from the fixed feature list, e.g. quiet or gpu-cuda.' });
     await expect(addWorkstation(db, staff, { labId: await labId('Project Room'), label: 'PR-01', features: 'quiet' }))
-      .rejects.toMatchObject({ name: 'InvalidInput', message: 'features may only contain quiet, dual-monitor and gpu.' });
+      .rejects.toMatchObject({ name: 'InvalidInput', message: 'features may only contain ids from the fixed feature list, e.g. quiet or gpu-cuda.' });
     expect(await count('workstations')).toBe(6);
   });
 
@@ -100,8 +100,8 @@ describe('workstations', () => {
   });
 
   test('AC-12 staff can change the features of a workstation', async () => {
-    const updated = await updateWorkstation(db, staff, ws.NL02, { features: ['gpu'] });
-    expect(updated).toMatchObject({ id: ws.NL02, features: ['gpu'] });
+    const updated = await updateWorkstation(db, staff, ws.NL02, { features: ['gpu-cuda'] });
+    expect(updated).toMatchObject({ id: ws.NL02, features: ['gpu-cuda'] });
     await expect(updateWorkstation(db, staff, ws.NL02, { features: ['fast'] })).rejects.toMatchObject({ name: 'InvalidInput' });
   });
 

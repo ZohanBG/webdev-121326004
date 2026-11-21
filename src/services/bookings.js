@@ -7,6 +7,23 @@ import * as users from '../data/users.js';
 import { InvalidInput, Forbidden, NotFound, Conflict } from './errors.js';
 import { requireUser, requireStaff } from './access.js';
 import { BLOCKS, blockTimes, bookableDates, hasStarted, isRealDate, isWeekday, lastBookableDate, today } from './time.js';
+import { FEATURE_IDS } from './features.js';
+
+/**
+ * The feature filter shared by the day view and the MCP tool: "quiet,dual-monitor" or
+ * ['quiet', 'dual-monitor'] into known ids. Empty or missing means no filter; an unknown id is a 400 naming it.
+ */
+export function parseFeatureFilter(value) {
+  const ids = (Array.isArray(value) ? value : String(value ?? '').split(','))
+    .map((id) => String(id).trim())
+    .filter(Boolean);
+  const unknown = ids.find((id) => !FEATURE_IDS.includes(id));
+  if (unknown) throw new InvalidInput(`"${unknown}" is not a known feature.`);
+  return [...new Set(ids)];
+}
+
+/** AND: a workstation matches when it has every wanted feature. */
+const hasEvery = (ws, wanted) => wanted.every((feature) => ws.features.includes(feature));
 
 const MAX_UPCOMING = 3;
 
@@ -84,11 +101,16 @@ export async function cancelBooking(db, user, bookingId, now = new Date()) {
   return cancelled;
 }
 
-/** The day view: every workstation in service, by lab, with its six blocks. Never says who holds a block. */
-export async function listDay(db, user, date, now = new Date()) {
+/**
+ * The day view: every workstation in service that has all the wanted features, by lab, with its six
+ * blocks. Never says who holds a block.
+ */
+export async function listDay(db, user, date, now = new Date(), { features } = {}) {
   requireUser(user);
   checkOpenDay(date, now);
-  const [stations, booked] = await Promise.all([workstations.listActiveWithLabs(db), bookings.listActiveOnDate(db, date)]);
+  const wanted = parseFeatureFilter(features);
+  const [all, booked] = await Promise.all([workstations.listActiveWithLabs(db), bookings.listActiveOnDate(db, date)]);
+  const stations = all.filter((ws) => hasEvery(ws, wanted));
   const holder = new Map(booked.map((b) => [`${b.workstationId}:${b.block}`, b]));
 
   const labs = new Map();
@@ -139,9 +161,10 @@ export function parseSlotId(slotId) {
  * Every slot the user could book right now, in the 14-day window or on one date: workstations in
  * service, blocks not started, not held by anyone, and not in a block where the user already has a booking.
  */
-export async function listFreeSlots(db, user, { date, lab, feature } = {}, now = new Date()) {
+export async function listFreeSlots(db, user, { date, lab, features } = {}, now = new Date()) {
   requireUser(user);
   if (date !== undefined) checkOpenDay(date, now);
+  const filter = parseFeatureFilter(features);
   const dates = date === undefined ? bookableDates(now) : [date];
   const [stations, booked] = await Promise.all([
     workstations.listActiveWithLabs(db),
@@ -149,8 +172,7 @@ export async function listFreeSlots(db, user, { date, lab, feature } = {}, now =
   ]);
   const taken = new Set(booked.map(slotIdOf));
   const mine = new Set(booked.filter((b) => b.userId === user.id).map((b) => `${b.date}:${b.block}`));
-  const wanted = stations.filter((ws) => (!lab || ws.labName.toLowerCase().includes(lab.toLowerCase()))
-    && (!feature || ws.features.includes(feature)));
+  const wanted = stations.filter((ws) => (!lab || ws.labName.toLowerCase().includes(lab.toLowerCase())) && hasEvery(ws, filter));
 
   const slots = [];
   for (const day of dates) {

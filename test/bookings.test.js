@@ -160,7 +160,7 @@ describe('GET /api/slots', () => {
     const day = await res.json();
     const all = day.labs.flatMap((l) => l.workstations);
     expect(all.map((w) => w.label)).toEqual(['GL-01', 'GL-02', 'NL-01', 'NL-02', 'NL-03']);
-    expect(all.find((w) => w.label === 'GL-02').features).toEqual(['gpu', 'dual-monitor']);
+    expect(all.find((w) => w.label === 'GL-02').features).toEqual(['gpu-cuda', 'gpu-server', 'high-end-pc', 'dual-monitor', 'linux', 'matlab']);
     expect(all.find((w) => w.label === 'NL-01').blocks.map((b) => b.state)).toEqual(['past', 'free', 'taken', 'free', 'free', 'free']);
     expect(all.find((w) => w.label === 'NL-02').blocks.map((b) => b.state)).toEqual(['past', 'free', 'free', 'yours', 'free', 'free']);
     expect(JSON.stringify(day)).not.toContain('student2@labspot.test');

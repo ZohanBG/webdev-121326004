@@ -10,6 +10,7 @@ import adminRoutes from './routes/admin.js';
 import suggestionRoutes from './routes/suggestions.js';
 import googleRoutes from './routes/google.js';
 import accountRoutes from './routes/account.js';
+import featureRoutes from './routes/features.js';
 import pageRoutes from './routes/pages.js';
 import { notFound, errorHandler } from './routes/errors.js';
 
@@ -38,6 +39,7 @@ export function createApp({ db, secureCookies = false, now = () => new Date(), m
   // who you are is settled here, before any service runs (401); what you may do is the service's call (403)
   app.use('/api/bookings', requireSignIn, bookingRoutes);
   app.use('/api/slots', requireSignIn, slotRoutes);
+  app.use('/api/features', featureRoutes);
   app.use('/api/workstations', requireSignIn, workstationRoutes);
   app.use('/api/admin', requireSignIn, adminRoutes);
   app.use('/api/suggestions', requireSignIn, suggestionRoutes);

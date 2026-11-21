@@ -31,6 +31,16 @@
       <div id="suggest-result" class="suggestion" role="status" hidden></div>
     </form>
 
+    <section class="card feature-filter" aria-labelledby="filter-title">
+      <div class="filter-head">
+        <h2 id="filter-title">Filter by features</h2>
+        <button id="filter-clear" class="secondary" type="button" hidden>Clear filters</button>
+      </div>
+      <p class="muted">Shows only workstations that have every feature you pick.</p>
+      <div id="filter-chips"></div>
+      <p id="filter-status" class="muted" role="status"></p>
+    </section>
+
     <div id="day-notice" class="message" role="status" hidden></div>
     <p id="day-status" class="muted" role="status">Loading the day…</p>
     <div id="day-error" class="message error" role="alert" hidden>

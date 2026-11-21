@@ -8,6 +8,7 @@ import { listFreeSlots } from './bookings.js';
 import { InvalidInput, Forbidden } from './errors.js';
 import { requireUser } from './access.js';
 import { startOfToday, today } from './time.js';
+import { FEATURES, FEATURE_IDS, featureLabel } from './features.js';
 
 export const FALLBACK = 'Suggestions are not available right now. Pick a free slot from the list below.';
 export const LIMIT_REACHED = "You have used today's 10 suggestions. Pick a free slot from the list below.";
@@ -21,9 +22,10 @@ const TIMEOUT_MS = 8000;
 
 const SYSTEM = `You help a university student pick one lab workstation slot.
 You get today's date, the student's request and the free slots. Each line is one date and time, then the free slots at that time, separated by ";".
-Each slot starts with its slot id, written as workstationId:date:block, for example 3:2026-11-26:4, followed by the workstation, the lab and its features.
-Answer with one JSON object and nothing else: {"slotId": "<only the slot id, copied exactly, e.g. 3:2026-11-26:4>", "reason": "<one short sentence, under 150 characters, saying why it fits>"}.
-Never invent a slot. If nothing fits well, pick the closest one and say why in the reason.`;
+Each slot starts with its slot id, written as workstationId:date:block, for example 3:2026-11-26:4, followed by the workstation, the lab and its features by label.
+Feature ids and their labels: ${FEATURES.map((f) => `${f.id} = ${f.label}`).join('; ')}.
+Answer with one JSON object and nothing else: {"slotId": "<only the slot id, copied exactly, e.g. 3:2026-11-26:4>", "features": ["<the ids of the requested features that this workstation has; an empty list if none>"], "reason": "<one short sentence, under 150 characters, saying why it fits>"}.
+Never invent a slot or a feature. If nothing fits well, pick the closest one and say why in the reason.`;
 
 /** A slot id inside a longer string, e.g. "3:2026-11-26:4 NL-03, Networks Lab". */
 const SLOT_ID = /\b\d+:\d{4}-\d{2}-\d{2}:[1-6]\b/;
@@ -76,7 +78,7 @@ function buildPrompt(text, slots, now) {
   for (const s of slots) {
     const key = `${s.date} ${s.start}–${s.end}`;
     if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(`${s.slotId} ${s.workstation}, ${s.lab}${s.features.length ? ` (${s.features.join(', ')})` : ''}`);
+    groups.get(key).push(`${s.slotId} ${s.workstation}, ${s.lab}${s.features.length ? ` (${s.features.map(featureLabel).join(', ')})` : ''}`);
   }
   const lines = [...groups].map(([when, list]) => `${when}: ${list.join('; ')}`);
   return `Today is ${today(now)}.\nRequest: ${text}\nFree slots:\n${lines.join('\n')}`;
@@ -107,6 +109,9 @@ function withTimeout(promise, ms, controller) {
  * refused. `why` is a category for the log, never the model's text, which can echo the student's words.
  * Two harmless variations are accepted: the object wrapped in a one-item array, and the slot id with
  * the workstation name after it. Either way the slot must be one that was offered.
+ * Every feature id the model claims must be on the fixed list and belong to that workstation (AC-41);
+ * an empty list, or none, claims nothing. The reason's wording is not checked: the page shows the
+ * workstation's real features next to it, as facts.
  */
 function parseReply(text, offered) {
   let data;
@@ -121,9 +126,13 @@ function parseReply(text, offered) {
   if (!id) return { why: 'no slot id in slotId' };
   const slot = offered.get(id);
   if (!slot) return { why: 'a slot id that was not offered' };
+  const claimed = data.features ?? [];
+  if (!Array.isArray(claimed)) return { why: 'features is not a list' };
+  if (!claimed.every((f) => FEATURE_IDS.includes(f))) return { why: 'a feature id that is not on the list' };
+  if (!claimed.every((f) => slot.features.includes(f))) return { why: 'a feature the workstation does not have' };
   const reason = typeof data.reason === 'string' ? data.reason.trim() : '';
   if (!reason || reason.length >= MAX_REASON || /[<>]/.test(reason)) return { why: 'no short plain-text reason' };
-  return { suggestion: { ...slot, reason } };
+  return { suggestion: { ...slot, matched: [...new Set(claimed)], reason } };
 }
 
 /**

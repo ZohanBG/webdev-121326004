@@ -82,7 +82,7 @@ describe('workstations', () => {
   test('AC-12 a feature outside the fixed list gets 400 and adds no row', async () => {
     const res = await send(staff, 'POST', '/api/workstations', { labId: await projectRoom(), label: 'PR-01', features: ['laser'] });
     expect(res.status).toBe(400);
-    expect(await res.json()).toEqual({ error: 'features may only contain quiet, dual-monitor and gpu.' });
+    expect(await res.json()).toEqual({ error: 'features may only contain ids from the fixed feature list, e.g. quiet or gpu-cuda.' });
     expect(await count('workstations')).toBe(6);
   });
 

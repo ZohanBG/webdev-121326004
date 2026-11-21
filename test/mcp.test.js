@@ -54,9 +54,9 @@ describe('who is calling', () => {
 describe('the tools', () => {
   test('list_free_slots shows slot ids to book, filtered by lab and feature; book_slot books one; my_bookings shows it', async () => {
     const tools = await toolsAs(STUDENT);
-    const list = await tools.call('list_free_slots', { date: TUE, lab: 'networks', feature: 'quiet' });
+    const list = await tools.call('list_free_slots', { date: TUE, lab: 'networks', features: ['quiet'] });
     expect(list.isError).toBeUndefined();
-    expect(list.text.split('\n')[0]).toBe(`${ws.NL01}:${TUE}:1  NL-01, Networks Lab (room 2140), ${TUE} 08:00–10:00, quiet`);
+    expect(list.text.split('\n')[0]).toBe(`${ws.NL01}:${TUE}:1  NL-01, Networks Lab (room 2140), ${TUE} 08:00–10:00, quiet, linux, network-rack, accessible`);
 
     const booked = await tools.call('book_slot', { slotId: `${ws.NL01}:${TUE}:3` });
     expect(booked.text).toMatch(new RegExp(`^Booked ${ws.NL01}:${TUE}:3: ${TUE} 12:00–14:00\\. Booking id \\d+\\.$`));
@@ -89,7 +89,7 @@ describe('the tools', () => {
     const model = { model: 'fake', complete: async () => ({ stopReason: 'end_turn', text: JSON.stringify({ slotId: `${ws.NL03}:${TUE}:4`, reason: 'Quiet with two monitors.' }) }) };
     const withModel = await toolsAs(STUDENT, { model });
     expect((await withModel.call('suggest_slot', { text: 'quiet, two monitors, Tuesday afternoon' })).text)
-      .toBe(`Suggestion, not booked: ${ws.NL03}:${TUE}:4  NL-03, Networks Lab (room 2140), ${TUE} 14:00–16:00, quiet, dual-monitor. Why: Quiet with two monitors. Call book_slot with ${ws.NL03}:${TUE}:4 to book it.`);
+      .toBe(`Suggestion, not booked: ${ws.NL03}:${TUE}:4  NL-03, Networks Lab (room 2140), ${TUE} 14:00–16:00, quiet, dual-monitor, linux, windows. Why: Quiet with two monitors. Call book_slot with ${ws.NL03}:${TUE}:4 to book it.`);
     expect((await db.query('SELECT count(*)::int AS n FROM bookings')).rows[0].n).toBe(0);
 
     const noKey = await toolsAs(STUDENT, { env: { GEMINI_API_KEY: '' } });

@@ -246,9 +246,9 @@ describe('listFreeSlots', () => {
     expect(all).toHaveLength(6 * 5 - 1); // 5 workstations in service, one block taken
     expect(all[0]).toEqual({
       slotId: `${ws.GL01}:${TUE}:1`, workstationId: ws.GL01, date: TUE, block: 1, start: '08:00', end: '10:00',
-      workstation: 'GL-01', lab: 'GPU Lab', room: '1418', features: ['gpu'],
+      workstation: 'GL-01', lab: 'GPU Lab', room: '1418', features: ['gpu-cuda', 'high-end-pc', 'linux', 'docker-vm'],
     });
-    const quietNetworks = await listFreeSlots(db, student, { date: TUE, lab: 'networks', feature: 'quiet' }, NOW);
+    const quietNetworks = await listFreeSlots(db, student, { date: TUE, lab: 'networks', features: ['quiet'] }, NOW);
     expect(new Set(quietNetworks.map((s) => s.workstation))).toEqual(new Set(['NL-01', 'NL-03']));
     expect(quietNetworks.map((s) => s.slotId)).not.toContain(`${ws.NL03}:${TUE}:2`);
   });
@@ -272,7 +272,7 @@ describe('listDay and listMine', () => {
     const labels = day.labs.flatMap((lab) => lab.workstations.map((w) => w.label));
     expect(labels).toEqual(['GL-01', 'GL-02', 'NL-01', 'NL-02', 'NL-03']); // NL-04 is out of service
     const nl01 = day.labs.find((l) => l.name === 'Networks Lab').workstations.find((w) => w.label === 'NL-01');
-    expect(nl01.features).toEqual(['quiet']);
+    expect(nl01.features).toEqual(['quiet', 'linux', 'network-rack', 'accessible']);
     expect(nl01.blocks.map((b) => b.state)).toEqual(['past', 'yours', 'free', 'free', 'free', 'free']);
     expect(nl01.blocks[1]).toMatchObject({ block: 2, start: '10:00', end: '12:00' });
     expect(typeof nl01.blocks[1].bookingId).toBe('number');

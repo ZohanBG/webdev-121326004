@@ -16,19 +16,21 @@ export const LABS = [
   {
     name: 'Networks Lab',
     room: '2140',
+    // Cisco racks for the networking courses; NL-03 is the only seat that is both quiet and dual-monitor
     workstations: [
-      { label: 'NL-01', features: ['quiet'] },
-      { label: 'NL-02', features: ['dual-monitor'] },
-      { label: 'NL-03', features: ['quiet', 'dual-monitor'] },
-      { label: 'NL-04', features: [], inService: false },
+      { label: 'NL-01', features: ['quiet', 'linux', 'network-rack', 'accessible'] },
+      { label: 'NL-02', features: ['dual-monitor', 'windows', 'network-rack'] },
+      { label: 'NL-03', features: ['quiet', 'dual-monitor', 'linux', 'windows'] },
+      { label: 'NL-04', features: ['windows', 'network-rack'], inService: false },
     ],
   },
   {
     name: 'GPU Lab',
     room: '1418',
+    // machine learning and simulation: CUDA cards, the shared GPU server, MATLAB
     workstations: [
-      { label: 'GL-01', features: ['gpu'] },
-      { label: 'GL-02', features: ['gpu', 'dual-monitor'] },
+      { label: 'GL-01', features: ['gpu-cuda', 'high-end-pc', 'linux', 'docker-vm'] },
+      { label: 'GL-02', features: ['gpu-cuda', 'gpu-server', 'high-end-pc', 'dual-monitor', 'linux', 'matlab'] },
     ],
   },
   // no workstations yet: the lab that AC-25 deletes by hand

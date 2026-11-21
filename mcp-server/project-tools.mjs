@@ -7,17 +7,18 @@ import { listFreeSlots, listMine, createBooking, cancelBooking, parseSlotId, slo
 import { suggestSlot, createModelClient } from '../src/services/suggest.js';
 import { ServiceError } from '../src/services/errors.js';
 import { blockTimes } from '../src/services/time.js';
+import { FEATURE_IDS } from '../src/services/features.js';
 
 export const definitions = [
   {
     name: 'list_free_slots',
-    description: 'Lists the free lab workstation slots on one weekday (YYYY-MM-DD) within the next 14 days, optionally only in one lab or only with one feature. Use it before book_slot: each line starts with the slot id to book.',
+    description: 'Lists the free lab workstation slots on one weekday (YYYY-MM-DD) within the next 14 days, optionally only in one lab or only at workstations that have all of the listed features. Use it before book_slot: each line starts with the slot id to book.',
     inputSchema: {
       type: 'object',
       properties: {
         date: { type: 'string', description: 'The day, as YYYY-MM-DD' },
         lab: { type: 'string', description: 'Part of a lab name, e.g. "GPU"' },
-        feature: { type: 'string', enum: ['quiet', 'dual-monitor', 'gpu'] },
+        features: { type: 'array', items: { type: 'string', enum: FEATURE_IDS }, description: 'Only workstations that have every one of these, e.g. ["quiet", "dual-monitor"]' },
       },
       required: ['date'],
     },
@@ -83,9 +84,9 @@ export function createProjectTools({ env = process.env, db: given, now = () => n
   }
 
   const handlers = {
-    async list_free_slots({ date, lab, feature }) {
+    async list_free_slots({ date, lab, features }) {
       const user = await caller();
-      const slots = await listFreeSlots(database(), user, { date, lab, feature }, now());
+      const slots = await listFreeSlots(database(), user, { date, lab, features }, now());
       return slots.length ? slots.map(slotLine).join('\n') : `No free slots on ${date} with these filters.`;
     },
 

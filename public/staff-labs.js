@@ -2,8 +2,9 @@
 import { api } from './api.js';
 import { renderNav } from './nav.js';
 import { el } from './format.js';
+import { loadFeatures, featureTags, chipGroups, pressedIn } from './features-ui.js';
 
-const FEATURES = [['quiet', 'Quiet'], ['dual-monitor', 'Dual monitor'], ['gpu', 'GPU']];
+let featuresReady = false;
 
 const notice = document.querySelector('#staff-notice');
 const status = document.querySelector('#staff-status');
@@ -40,23 +41,42 @@ function renderWorkstation(ws) {
   const head = el('div', 'staff-ws-head');
   head.append(el('h4', '', ws.label), el('span', ws.inService ? 'badge' : 'badge badge-off', ws.inService ? 'In service' : 'Out of service'));
 
-  const features = el('fieldset', 'features features-inline');
-  features.append(el('legend', 'visually-hidden', `${ws.label} features`));
-  for (const [value, label] of FEATURES) {
-    const box = el('input');
-    box.type = 'checkbox';
-    box.value = value;
-    box.checked = ws.features.includes(value);
-    const wrap = el('label');
-    wrap.append(box, ` ${label}`);
-    features.append(wrap);
-  }
-  const save = el('button', 'secondary', 'Save features');
-  save.type = 'button';
-  save.setAttribute('aria-label', `Save features of ${ws.label}`);
-  save.addEventListener('click', () => {
-    const chosen = [...features.querySelectorAll('input:checked')].map((b) => b.value);
-    act(save, 'Saving…', () => api(`/api/workstations/${ws.id}`, { method: 'PATCH', body: { features: chosen } }), `Saved the features of ${ws.label}.`);
+  const current = ws.features.length ? featureTags(ws.features, `${ws.label} features`) : el('p', 'muted', 'No features listed.');
+
+  // the grouped chips open only for the workstation being edited, so the page stays short
+  const editor = el('div', 'feature-editor');
+  editor.hidden = true;
+  const edit = el('button', 'secondary', 'Edit features');
+  edit.type = 'button';
+  edit.setAttribute('aria-label', `Edit features of ${ws.label}`);
+  edit.setAttribute('aria-expanded', 'false');
+  edit.disabled = !featuresReady;
+  edit.addEventListener('click', () => {
+    const open = editor.hidden;
+    editor.hidden = !open;
+    edit.setAttribute('aria-expanded', String(open));
+    if (!open) return;
+    const chips = chipGroups(new Set(ws.features), () => {}, { idPrefix: `ws-${ws.id}` });
+    const save = el('button', '', 'Save features');
+    save.type = 'button';
+    save.setAttribute('aria-label', `Save features of ${ws.label}`);
+    save.addEventListener('click', () => act(
+      save,
+      'Saving…',
+      () => api(`/api/workstations/${ws.id}`, { method: 'PATCH', body: { features: pressedIn(chips) } }),
+      `Saved the features of ${ws.label}.`,
+    ));
+    const cancel = el('button', 'secondary', 'Cancel');
+    cancel.type = 'button';
+    cancel.addEventListener('click', () => {
+      editor.hidden = true;
+      edit.setAttribute('aria-expanded', 'false');
+      edit.focus();
+    });
+    const buttons = el('div', 'actions');
+    buttons.append(save, cancel);
+    editor.replaceChildren(chips, buttons);
+    editor.querySelector('.chip-toggle')?.focus();
   });
 
   const toggle = el('button', 'secondary', ws.inService ? 'Take out of service' : 'Put back in service');
@@ -70,8 +90,8 @@ function renderWorkstation(ws) {
   ));
 
   const actions = el('div', 'actions');
-  actions.append(save, toggle);
-  item.append(head, features, actions);
+  actions.append(edit, toggle);
+  item.append(head, current, actions, editor);
   return item;
 }
 
@@ -126,25 +146,35 @@ document.querySelector('#add-lab').addEventListener('submit', async (event) => {
   event.preventDefault();
   const form = event.target;
   const name = form.name.value;
-  const ok = await act(form.querySelector('button'), 'Adding…',
+  const ok = await act(form.querySelector('button[type="submit"]'), 'Adding…',
     () => api('/api/labs', { method: 'POST', body: { name, room: form.room.value } }), `Added the lab ${name.trim()}.`);
   if (ok) form.reset();
 });
+
+const newFeatures = document.querySelector('#ws-features');
+
+function resetNewFeatures() {
+  newFeatures.replaceChildren(chipGroups(new Set(), () => {}, { idPrefix: 'new-ws' }));
+}
 
 document.querySelector('#add-workstation').addEventListener('submit', async (event) => {
   event.preventDefault();
   const form = event.target;
   const label = form.label.value;
-  const features = [...form.querySelectorAll('input[name="features"]:checked')].map((b) => b.value);
-  const ok = await act(form.querySelector('button'), 'Adding…',
-    () => api('/api/workstations', { method: 'POST', body: { labId: Number(form.labId.value), label, features } }),
+  // the chips are buttons too, so the submit button is named explicitly
+  const ok = await act(form.querySelector('button[type="submit"]'), 'Adding…',
+    () => api('/api/workstations', { method: 'POST', body: { labId: Number(form.labId.value), label, features: pressedIn(newFeatures) } }),
     `Added the workstation ${label.trim()}.`);
   if (ok) {
     form.label.value = '';
-    form.querySelectorAll('input[name="features"]').forEach((b) => { b.checked = false; });
+    resetNewFeatures();
   }
 });
 
 document.querySelector('#staff-retry').addEventListener('click', load);
 await renderNav();
+newFeatures.replaceChildren(el('p', 'muted', 'Loading features…'));
+featuresReady = Boolean(await loadFeatures());
+if (featuresReady) resetNewFeatures();
+else newFeatures.replaceChildren(el('p', 'muted', 'The feature list is not available right now; a workstation can still be added without features.'));
 load();

@@ -5,12 +5,11 @@ import * as bookings from '../data/bookings.js';
 import { InvalidInput, NotFound, Conflict } from './errors.js';
 import { requireStaff } from './access.js';
 import { hasStarted, today } from './time.js';
-
-export const FEATURES = ['quiet', 'dual-monitor', 'gpu'];
+import { FEATURE_IDS } from './features.js';
 
 function parseFeatures(features) {
-  if (!Array.isArray(features) || !features.every((f) => FEATURES.includes(f))) {
-    throw new InvalidInput('features may only contain quiet, dual-monitor and gpu.');
+  if (!Array.isArray(features) || !features.every((f) => FEATURE_IDS.includes(f))) {
+    throw new InvalidInput('features may only contain ids from the fixed feature list, e.g. quiet or gpu-cuda.');
   }
   return [...new Set(features)];
 }

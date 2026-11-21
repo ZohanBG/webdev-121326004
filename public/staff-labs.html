@@ -33,12 +33,8 @@
         <select id="ws-lab" name="labId" required></select>
         <label for="ws-label">Label</label>
         <input id="ws-label" name="label" required maxlength="20" placeholder="e.g. NL-05">
-        <fieldset class="features">
-          <legend>Features</legend>
-          <label><input type="checkbox" name="features" value="quiet"> Quiet</label>
-          <label><input type="checkbox" name="features" value="dual-monitor"> Dual monitor</label>
-          <label><input type="checkbox" name="features" value="gpu"> GPU</label>
-        </fieldset>
+        <p class="field-label" id="ws-features-title">Features</p>
+        <div id="ws-features" class="features-picker" role="group" aria-labelledby="ws-features-title"></div>
         <button type="submit">Add workstation</button>
       </form>
     </div>

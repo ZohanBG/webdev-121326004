@@ -1,18 +1,23 @@
 import { describe, test, expect, afterEach } from 'vitest';
 import { PGlite } from '@electric-sql/pglite';
+import { copyFileSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { migrate } from '../scripts/migrate.js';
-import { seed } from '../scripts/seed.js';
+import { seed, LABS } from '../scripts/seed.js';
+import { FEATURE_IDS } from '../src/services/features.js';
 
 let db;
 afterEach(async () => {
   await db?.close();
+  db = undefined;
 });
 
 describe('migrations', () => {
   test('apply to an empty database, and a second run applies nothing', async () => {
     db = new PGlite();
     const first = await migrate(db);
-    expect(first).toEqual(['001_users_labs_sessions.sql', '002_bookings.sql', '003_suggestion_requests.sql', '004_identities.sql', '005_gemini_outcomes.sql']);
+    expect(first).toEqual(['001_users_labs_sessions.sql', '002_bookings.sql', '003_suggestion_requests.sql', '004_identities.sql', '005_gemini_outcomes.sql', '006_feature_list.sql']);
     expect(await migrate(db)).toEqual([]);
 
     const { rows } = await db.query(
@@ -28,6 +33,45 @@ describe('migrations', () => {
     await expect(
       db.query("INSERT INTO workstations (lab_id, label, features) VALUES ($1, 'X-1', ARRAY['laser'])", [lab.id]),
     ).rejects.toThrow(/check constraint/);
+  });
+});
+
+describe('the feature list', () => {
+  test("the database's CHECK allows exactly the ids in src/services/features.js, and refuses any other", async () => {
+    db = new PGlite();
+    await migrate(db);
+    const { rows: [{ def }] } = await db.query(
+      "SELECT pg_get_constraintdef(oid) AS def FROM pg_constraint WHERE conname = 'workstations_features_check'",
+    );
+    const inDatabase = [...def.matchAll(/'([a-z-]+)'::text/g)].map((m) => m[1]);
+    expect(inDatabase.sort()).toEqual([...FEATURE_IDS].sort());
+    const { rows: [lab] } = await db.query("INSERT INTO labs (name, room) VALUES ('Lab', '1') RETURNING id");
+    await expect(db.query("INSERT INTO workstations (lab_id, label, features) VALUES ($1, 'X-1', ARRAY['gpu'])", [lab.id]))
+      .rejects.toThrow(/workstations_features_check/);
+  });
+
+  test('migration 006 turns an existing "gpu" into "gpu-cuda" and keeps every other feature', async () => {
+    const all = join(import.meta.dirname, '..', 'migrations');
+    const before006 = mkdtempSync(join(tmpdir(), 'labspot-migrations-'));
+    try {
+      for (const file of readdirSync(all).filter((f) => f < '006')) copyFileSync(join(all, file), join(before006, file));
+      db = new PGlite();
+      await migrate(db, before006);
+      const { rows: [lab] } = await db.query("INSERT INTO labs (name, room) VALUES ('Lab', '1') RETURNING id");
+      await db.query("INSERT INTO workstations (lab_id, label, features) VALUES ($1, 'OLD-1', ARRAY['gpu', 'quiet'])", [lab.id]);
+
+      expect(await migrate(db, all)).toEqual(['006_feature_list.sql']);
+      const { rows } = await db.query("SELECT features FROM workstations WHERE label = 'OLD-1'");
+      expect(rows[0].features).toEqual(['gpu-cuda', 'quiet']);
+    } finally {
+      rmSync(before006, { recursive: true, force: true });
+    }
+  });
+
+  test('every feature in the seed is on the list, and the seed keeps a lab with no workstations (AC-24, AC-25)', () => {
+    const seeded = LABS.flatMap((lab) => lab.workstations.flatMap((w) => w.features));
+    expect(seeded.filter((f) => !FEATURE_IDS.includes(f))).toEqual([]);
+    expect(LABS.map((lab) => lab.workstations.length)).toEqual([4, 2, 0]);
   });
 });
 

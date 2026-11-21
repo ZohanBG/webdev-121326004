@@ -1,8 +1,10 @@
 // The day view: every workstation with its six blocks, and Book on the free ones.
 // All rules live on the server; this page only shows what /api/slots says and sends what the user pressed.
+// The date and the feature filter live in the URL, so a reload or Back shows the same view.
 import { api } from './api.js';
 import { renderNav } from './nav.js';
 import { el, isoDate, longDate } from './format.js';
+import { loadFeatures, labelOf, featureTags, chipGroups } from './features-ui.js';
 
 const dateInput = document.querySelector('#date');
 const heading = document.querySelector('#day-heading');
@@ -11,13 +13,16 @@ const status = document.querySelector('#day-status');
 const errorBox = document.querySelector('#day-error');
 const errorText = document.querySelector('#day-error-text');
 const content = document.querySelector('#day-content');
-
-const STATE_LABEL = { free: 'Free', taken: 'Taken', yours: 'Yours', past: 'Past' };
-const FEATURE_LABEL = { quiet: 'Quiet', 'dual-monitor': 'Dual monitor', gpu: 'GPU' };
-let user = null;
+const filterBox = document.querySelector('#filter-chips');
+const filterStatus = document.querySelector('#filter-status');
+const clearButton = document.querySelector('#filter-clear');
 const suggestForm = document.querySelector('#suggest');
 const suggestButton = document.querySelector('#suggest-button');
 const suggestResult = document.querySelector('#suggest-result');
+
+const STATE_LABEL = { free: 'Free', taken: 'Taken', yours: 'Yours', past: 'Past' };
+let user = null;
+let chosen = new Set();
 
 const isWeekend = (d) => d.getDay() === 0 || d.getDay() === 6;
 function weekdayFrom(date, step) {
@@ -29,6 +34,20 @@ function firstOpenDay() {
   const d = new Date();
   while (isWeekend(d)) d.setDate(d.getDate() + 1);
   return isoDate(d);
+}
+
+/** The view as a URL: /day?date=…&features=a,b */
+function urlFor(date, features) {
+  const params = new URLSearchParams({ date });
+  if (features.size) params.set('features', [...features].join(','));
+  return `/day?${params}`;
+}
+
+/** Reads the date and the filter from the URL (on start, and when Back or Forward changes it). */
+function readUrl() {
+  const params = new URLSearchParams(location.search);
+  dateInput.value = params.get('date') || firstOpenDay();
+  chosen = new Set((params.get('features') ?? '').split(',').filter(Boolean));
 }
 
 function showNotice(text, kind) {
@@ -61,10 +80,7 @@ function renderWorkstation(ws) {
   const item = el('li', 'workstation');
   const head = el('div', 'workstation-head');
   head.append(el('h3', 'workstation-label', ws.label));
-  const features = el('ul', 'chips');
-  features.setAttribute('aria-label', 'Features');
-  for (const f of ws.features) features.append(el('li', 'chip', FEATURE_LABEL[f] ?? f));
-  if (ws.features.length) head.append(features);
+  if (ws.features.length) head.append(featureTags(ws.features, `${ws.label} features`));
   const blocks = el('ol', 'blocks');
   blocks.setAttribute('aria-label', `${ws.label} blocks`);
   blocks.append(...ws.blocks.map((b) => renderBlock(ws, b)));
@@ -81,6 +97,20 @@ function renderLab(lab) {
   return section;
 }
 
+/** Empty because of the filter: say so, and offer the way out. */
+function showFilteredEmpty() {
+  const clear = el('button', 'secondary', 'Clear filters');
+  clear.type = 'button';
+  clear.addEventListener('click', clearFilters);
+  status.replaceChildren(el('span', '', 'No workstation has all of these features on this day. '), clear);
+}
+
+function describeFilter(count) {
+  if (!chosen.size) return '';
+  const names = [...chosen].map(labelOf).join(', ');
+  return `${count} workstation${count === 1 ? '' : 's'} with ${names}.`;
+}
+
 async function load() {
   const date = dateInput.value;
   heading.textContent = date ? longDate(date) : '';
@@ -88,20 +118,27 @@ async function load() {
   status.hidden = false;
   errorBox.hidden = true;
   content.hidden = true;
+  clearButton.hidden = chosen.size === 0;
 
-  const result = await api(`/api/slots?date=${encodeURIComponent(date)}`);
+  const params = new URLSearchParams({ date });
+  if (chosen.size) params.set('features', [...chosen].join(','));
+  const result = await api(`/api/slots?${params}`);
   if (result.status === 401) {
     location.assign('/login');
     return;
   }
   if (!result.ok) {
     status.hidden = true;
+    filterStatus.textContent = '';
     errorText.textContent = result.error;
     errorBox.hidden = false;
     return;
   }
+  const count = result.data.labs.reduce((n, lab) => n + lab.workstations.length, 0);
+  filterStatus.textContent = describeFilter(count);
   if (result.data.labs.length === 0) {
-    status.textContent = 'No workstations are open for booking yet. Ask the lab staff to add one.';
+    if (chosen.size) showFilteredEmpty();
+    else status.textContent = 'No workstations are open for booking yet. Ask the lab staff to add one.';
     return;
   }
   content.replaceChildren(...result.data.labs.map(renderLab));
@@ -121,11 +158,21 @@ async function book(ws, block, button) {
   await load();
 }
 
-/** A suggestion is labelled as one, with the model's reason, and is booked only when the student presses Book. */
+/**
+ * A suggestion in two labelled parts: the workstation's features from LabSpot's database (facts), and
+ * the model's reason (its words). Nothing is booked until the student presses Book.
+ */
 function showSuggestion(s) {
   const title = el('p', 'suggestion-label', 'Suggestion');
   const what = el('p', 'suggestion-what', `${s.workstation}, ${s.lab} · ${longDate(s.date)}, ${s.start}–${s.end}`);
-  const why = el('p', 'muted', `Why: ${s.reason}`);
+
+  const facts = el('div', 'suggestion-part');
+  facts.append(el('h3', '', 'Workstation features'), el('p', 'muted part-note', "From LabSpot's records"));
+  facts.append(s.features.length ? featureTags(s.features, `${s.workstation} features`) : el('p', '', 'No listed features.'));
+
+  const words = el('div', 'suggestion-part');
+  words.append(el('h3', '', 'Why the model picked it'), el('p', 'muted part-note', "The model's own words"), el('p', 'suggestion-reason', s.reason));
+
   const book = el('button', '', 'Book this slot');
   book.type = 'button';
   book.addEventListener('click', async () => {
@@ -138,7 +185,7 @@ function showSuggestion(s) {
     if (dateInput.value === s.date) await load();
     else go(s.date);
   });
-  suggestResult.replaceChildren(title, what, why, book);
+  suggestResult.replaceChildren(title, what, facts, words, book);
   suggestResult.className = 'suggestion';
   suggestResult.hidden = false;
 }
@@ -161,11 +208,37 @@ suggestForm.addEventListener('submit', async (event) => {
   }
 });
 
+/** A new date replaces the history entry; a new filter adds one, so Back undoes it. */
 function go(date) {
   dateInput.value = date;
-  history.replaceState(null, '', `/day?date=${date}`);
+  history.replaceState(null, '', urlFor(date, chosen));
   notice.hidden = true;
   load();
+}
+
+function setFilter(next) {
+  chosen = next;
+  history.pushState(null, '', urlFor(dateInput.value, chosen));
+  load();
+}
+
+function renderFilter() {
+  filterBox.replaceChildren(chipGroups(chosen, setFilter, { idPrefix: 'filter' }));
+}
+
+function clearFilters() {
+  setFilter(new Set());
+  renderFilter();
+  filterBox.querySelector('.chip-toggle')?.focus();
+}
+
+async function startFilter() {
+  filterBox.replaceChildren(el('p', 'muted', 'Loading features…'));
+  if (await loadFeatures()) {
+    renderFilter();
+  } else {
+    filterBox.replaceChildren(el('p', 'muted', 'The feature filter is not available right now. The day view below still works.'));
+  }
 }
 
 document.querySelector('#prev-day').addEventListener('click', () => go(weekdayFrom(dateInput.value || firstOpenDay(), -1)));
@@ -173,8 +246,15 @@ document.querySelector('#next-day').addEventListener('click', () => go(weekdayFr
 dateInput.addEventListener('change', () => go(dateInput.value));
 document.querySelector('#day-picker').addEventListener('submit', (e) => e.preventDefault());
 document.querySelector('#day-retry').addEventListener('click', load);
+clearButton.addEventListener('click', clearFilters);
+window.addEventListener('popstate', () => {
+  readUrl();
+  renderFilter();
+  load();
+});
 
 user = await renderNav();
 suggestForm.hidden = user?.role === 'staff';
-dateInput.value = new URLSearchParams(location.search).get('date') || firstOpenDay();
+readUrl();
+await startFilter();
 load();

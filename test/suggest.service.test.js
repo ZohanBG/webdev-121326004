@@ -51,7 +51,7 @@ describe('a good answer', () => {
 
     expect(result.suggestion).toMatchObject({
       slotId, workstationId: ws.NL03, date: TUE, block: 4, start: '14:00', end: '16:00',
-      workstation: 'NL-03', lab: 'Networks Lab', features: ['quiet', 'dual-monitor'], reason: 'NL-03 is quiet and has two monitors.',
+      workstation: 'NL-03', lab: 'Networks Lab', features: ['quiet', 'dual-monitor', 'linux', 'windows'], reason: 'NL-03 is quiet and has two monitors.',
     });
     expect(await bookingCount()).toBe(0);
     expect(await outcomes()).toEqual(['ok']);
