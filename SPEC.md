@@ -96,6 +96,24 @@ One request, `POST /api/bookings`, from the Book button to the database and back
 
 Where my code does not follow this layering: `staffOnly` in `src/routes/pages.js` checks the role in a route, so the rule "who is staff" lives in two places. It decides only whether the staff HTML page is served: a student gets 403 and `forbidden.html` and never reaches it. Every staff API call is still refused by the services, so even without this check a student could not read or change staff data. Moving it would mean a service call just to serve static HTML, so I kept it and named it here.
 
+### Where each screen is rendered
+
+Every page is a static HTML file; the server only decides who may get it (`src/routes/pages.js`: signed out → redirect to `/login`, a student on a staff page → 403 with the "Not allowed" page). The page's own script then fetches its data from the JSON API and draws it in the browser. On every signed-in page, the top-bar menu links appear only after `/api/auth/me` answers.
+
+| Screen | Rendered | Why | What the user sees while it loads |
+| --- | --- | --- | --- |
+| Sign in (`/login`) | Server (static HTML), no data fetched | Nothing depends on the user yet, so a plain form loads fastest | Nothing to wait for; the button says "Signing in…" after submit |
+| Labs (`/labs`) | Browser: `/api/auth/me` → `/api/labs` | One rendering pattern for every page (static shell, `api.js`, shared top bar), so there is one way to load data, show errors and retry; the list is the same for every signed-in user, so server rendering would gain nothing but a second code path | 3 grey card placeholders |
+| Day view (`/day`) | Browser: `/api/auth/me` → `/api/features` → `/api/slots` (and `/api/suggestions` on request) | Book, the feature filter and suggestions change the grid without a reload; a server-rendered page would reload on every chip | One title bar and one tall placeholder block; "Loading features…" in the filter; "Finding a slot…" on the suggestion button |
+| My bookings (`/my-bookings`) | Browser: `/api/auth/me` → `/api/bookings` | Cancel removes the booking from the list in place, without a reload | Placeholder rows |
+| Account (`/account`) | Browser: `/api/auth/me` → `/api/account` | Setting a password shows success or an error inline and keeps what was typed; a server-rendered form would reload and lose the input on every error | Placeholder cards |
+| Manage labs (`/staff/labs`, staff) | Browser: `/api/auth/me` → `/api/features` → `/api/admin/labs` | Adding a workstation, editing features and taking one out of service update the page without a reload | Placeholders; "Loading features…" in the form |
+| All bookings (`/staff/bookings`, staff) | Browser: `/api/auth/me` → `/api/admin/bookings` | The date arrows and Cancel change the list in place | Placeholder rows |
+| Not allowed (403) | Server: static page sent with status 403; browser fetches `/api/auth/me` for the top bar | The 403 status and message come from the server alone; the top bar only gives the student a way back to their own pages | Nothing to wait for |
+| Page not found (404) | Server (static HTML) | No data needed | Nothing to wait for |
+
+Trade-off: rendering in the browser means sequential round trips. The Day view makes three before the grid appears (the waterfall measured in step 10 C). Server rendering would show the first content sooner, but every Book, Cancel and filter change would need a full page reload. The rules live in one place either way: both the HTTP routes and the MCP server call the same functions in `src/services/`, so the refusals match (AC-22, AC-30). A possible next step: `/api/features` is public and does not depend on `/api/auth/me`, so the Day view and Manage labs could request it in parallel and save one round trip.
+
 ## Acceptance criteria
 <!-- Every criterion carries an id. A test proves it by naming that id in its title, for example
      test('AC-3 a booking that overlaps another is refused with 409', ...).
