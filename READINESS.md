@@ -46,7 +46,7 @@ How I checked: `node src/server.js` without `DATABASE_URL` printed `missing DATA
 | No model key (`GEMINI_API_KEY` not set) | the same fallback sentence, and the day grid still works | **local, not the live site**: the Docker image with no key on a throw-away database ([model-key-off.png](docs/ui/model-key-off.png)) |
 | Neon closes an idle connection | no crash; one log line | the pool's `'error'` listener in `src/data/db.js`; test "AC-42 the pool survives a lost idle connection" |
 | Container stopped or redeployed | closes in under a second on SIGTERM, exit code 0 | my own `docker stop`: "SIGTERM: closing", exit code 0 |
-| Rollback to the previous deploy | **unverified**: not timed yet | see section 7 |
+| Rollback to the previous deploy | the previous version is back in about 20 seconds; Auto-Deploy stays "After CI Checks Pass" | my own rollback in Render → Events on 21 November 2026, from 249c03c to bd97007: 20 s until Labs showed "Every lab you can book" again; Auto-Deploy was unchanged; Manual Deploy then brought 249c03c back |
 
 No response contains a stack trace (my own checks above, and test AC-44).
 
@@ -87,7 +87,7 @@ How I checked: [docs/ui/waterfall.txt](docs/ui/waterfall.txt) (every request wit
 
 1. **Shared seed password and no limit on sign-in attempts.** The three seeded accounts, one of them staff, share `SEED_PASSWORD` on the live site, and nothing slows down guessing. Whoever gets in as staff can cancel any booking and change labs. I kept the password on purpose. Next step: a unique staff password and a per-account limit on sign-in attempts.
 2. **The second-account 403 check: shown locally, not yet on the live site.** Code and tests cover it (AC-9, AC-22), and the local Docker image refused it (section 6), but I have not proved it on the deployment. Next step: run the `DELETE` as `student2@` against `student@`'s booking on the live site before Exercise 5.
-3. **Rollback is not timed.** I don't yet know how long recovery from a bad deploy takes. Next step: do the timed rollback in Render before Exercise 5 and record the seconds here.
+3. **Rollback: closed.** Tried on the live site on 21 November 2026: Render → Events → Rollback from 249c03c to bd97007 took 20 seconds until Labs showed "Every lab you can book" again; Auto-Deploy stayed "After CI Checks Pass"; Manual Deploy brought 249c03c back. What a rollback does not undo is the database: a migration that already ran stays. Next step: keep migrations additive, so the previous version still works on the newer schema.
 4. **`MCP_TOKEN` is a full session token valid for 7 days.** If it leaks, someone acts as that user until it expires. Next step: use a student account's token only (never staff), and sign out that session to revoke it if it leaks.
 5. **Render's free tier sleeps after about 15 minutes without traffic.** The first visitor waits for it to wake (first measurement: `node checks/ex4.mjs` waited 13 s for the sleeping service on 21 November 2026), and a paused Neon adds its own wake-up on the first query. Next step: accept it for a course project, measure one cold start, and say so at the defense.
 6. **Shared Gemini free quota.** A 429 is likely when the class uses it at the same time; suggestions then fall back, which is safe but makes the feature often unavailable. Next step: accept it; a paid key would remove it at the cost per call in section 8.

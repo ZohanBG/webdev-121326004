@@ -288,6 +288,7 @@ Changed during review (Променено при прегледа): Plan D appro
     - Step 10 A (the rollback) stays open: it needs my Render dashboard.
     - docs/UI.md: all 17 items ticked, each with a "how I checked" line saying local test server; the Evidence section links every file. READINESS.md: sections 3, 4, 5, 6 and 8 have these results marked local, not the live site; gaps 2, 7 and 8 say shown locally, not yet on the live site; gap 3 (rollback) is unchanged.
     - `node checks/ex4.mjs`: 33/34; the only FAIL is "no .env is committed", because my laptop has a .env file (it passes in CI).
+  - Msg 26: Step 10 A: Rollback done by me in Render: from 249c03c to bd97007 took 20 seconds until Labs showed "Every lab you can book" again. Auto-Deploy was unchanged (still "After CI Checks Pass"; my first message still had both choices in it, and the agent asked instead of guessing). Manual Deploy brought 249c03c back; 249c03c had been deployed by Auto-Deploy after CI, as Render → Events shows. READINESS.md: the rollback row in section 3 and gap 3 closed with this result (plus the remaining risk: a rollback does not undo a migration). README.md: the scripts/ui/ row names screenshots.mjs. Committed and pushed.
 
 ### Plan E: steps 1 and 2 (no code until approved)
 Step 1:
