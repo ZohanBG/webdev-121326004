@@ -4,29 +4,49 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>All bookings · LabSpot</title>
+  <script src="/theme.js"></script>
   <link rel="stylesheet" href="/styles.css">
   <script type="module" src="/staff-bookings.js"></script>
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="/labs">LabSpot</a>
-    <nav id="nav" class="nav" aria-label="Main"></nav>
-    <button id="sign-out" class="secondary" type="button">Sign out</button>
+    <div class="topbar-inner">
+      <a class="brand" href="/labs">LabSpot</a>
+      <nav id="nav" class="nav" aria-label="Main"></nav>
+      <div class="account-box">
+        <span id="who" class="who"></span>
+        <button id="theme-toggle" class="secondary theme-toggle" type="button"><span class="symbol" aria-hidden="true">☾</span><span class="theme-word">Dark</span></button>
+        <button id="sign-out" class="secondary" type="button">Sign out</button>
+      </div>
+    </div>
   </header>
   <main>
     <h1>All bookings</h1>
+    <p class="intro">Every booking on one day, with the student who made it.</p>
     <form id="all-picker" class="day-picker">
+      <button id="all-prev" class="secondary" type="button" aria-label="Previous weekday">‹</button>
       <label for="all-date" class="visually-hidden">Date</label>
       <input id="all-date" name="date" type="date" required>
+      <button id="all-next" class="secondary" type="button" aria-label="Next weekday">›</button>
     </form>
-    <p id="all-heading" class="muted"></p>
+    <p id="all-heading" class="day-heading"></p>
     <div id="all-notice" class="message" role="status" hidden></div>
-    <p id="all-status" class="muted" role="status">Loading bookings…</p>
+    <div id="all-status" class="status" role="status"><span class="visually-hidden">Loading bookings…</span></div>
     <div id="all-error" class="message error" role="alert" hidden>
-      <p id="all-error-text"></p>
-      <button id="all-retry" class="secondary" type="button">Try again</button>
+      <span class="symbol" aria-hidden="true">!</span>
+      <div class="message-body">
+        <p id="all-error-text"></p>
+        <button id="all-retry" class="secondary" type="button">Try again</button>
+      </div>
     </div>
-    <ul id="all" class="booking-list" hidden></ul>
+    <div id="all-region" class="region" aria-busy="true">
+      <div class="placeholders" aria-hidden="true">
+        <div class="placeholder placeholder-title"></div>
+        <div class="placeholder"></div>
+        <div class="placeholder"></div>
+      </div>
+      <div id="all" class="day-groups" hidden></div>
+    </div>
   </main>
 </body>
 </html>

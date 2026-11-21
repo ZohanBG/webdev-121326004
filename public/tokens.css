@@ -1,10 +1,16 @@
-/* Every color, spacing, font size and radius the UI uses. Nothing else in the CSS hard-codes one. */
+/* Every color, size, spacing, font size, radius and shadow the UI uses. Nothing else in the CSS hard-codes one.
+   Contrast of each pair, in both themes, is recorded in docs/UI.md. */
 :root {
+  color-scheme: light dark;
+
   --color-bg: #f5f6f8;
   --color-surface: #ffffff;
   --color-text: #1b1f24;
   --color-muted: #4a5360;
+  /* decorative lines (cards, dividers) */
   --color-border: #c9d0d9;
+  /* edges people must see to use a control (inputs, chips): 3:1 or more, WCAG 1.4.11 */
+  --color-border-strong: #6b7682;
   --color-primary: #0b5cad;
   --color-primary-hover: #08467f;
   --color-on-primary: #ffffff;
@@ -12,11 +18,26 @@
   --color-error-bg: #fdecea;
   --color-success: #1d6b35;
   --color-success-bg: #e6f4ea;
+  --color-danger: #a3241c;
+  --color-danger-bg: #fdecea;
+  --color-danger-hover: #7f1c16;
   --color-taken-bg: #eceff3;
   --color-yours-bg: #e3eefb;
   --color-focus: #08467f;
+  --color-placeholder: #e4e8ed;
+  --color-placeholder-shine: #f1f3f6;
+  --shadow-card: 0 1px 2px rgb(27 31 36 / 0.08);
 
   --touch-target: 44px;
+  --border-width: 1px;
+  --focus-width: 3px;
+  --focus-offset: 2px;
+  --underline-offset: 4px;
+  --underline-width: 2px;
+  --icon-size: 1.5rem;
+  --hidden-size: 1px;
+  --disabled-opacity: 0.7;
+  --shimmer-duration: 1.4s;
 
   --space-1: 4px;
   --space-2: 8px;
@@ -26,11 +47,100 @@
   --space-6: 32px;
 
   --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
   --font-size-base: 1rem;
   --font-size-lg: 1.25rem;
   --font-size-xl: 1.75rem;
+  --letter-spacing-caps: 0.05em;
+  --line-height: 1.5;
+  --line-height-tight: 1.25;
 
   --radius: 8px;
-  --content-width: 960px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+
+  --content-width: 1080px;
+  --readable-width: 560px;
+  --narrow-width: 420px;
+  --picker-width: 360px;
+  /* the smallest card in a row of cards (labs, the staff forms) */
+  --card-min: 280px;
+  /* the day view: a block in a workstation card (narrow screens) */
+  --block-min: 120px;
+  --block-height: 84px;
+  /* the day view grid (wide screens): the workstation column and the smallest block column */
+  --ws-column: 160px;
+  --grid-block-min: 72px;
+
+  /* loading placeholders, roughly the height of what replaces them */
+  --placeholder-height: 72px;
+  --placeholder-title-height: 28px;
+  --placeholder-title-width: 40%;
+  --placeholder-card-height: 160px;
+  --placeholder-lab-height: 360px;
 }
+
+/* The two breakpoints are the only numbers in styles.css, because CSS cannot read a custom property
+   inside a media query: 768px (the day view becomes a grid) and 1024px (the top bar fits on one row).
+   Both were measured, not assumed; see docs/UI.md. */
+
+/* Dark mode: the same names with other values, nothing else. It applies in two cases, so the values are
+   written twice and a test (test/tokens.test.js) checks that both copies match:
+   - the system asks for dark (prefers-color-scheme) and the person has not picked light in the top bar;
+   - the person picked dark in the top bar (public/theme.js sets data-theme on <html>). */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg: #0f1419;
+    --color-surface: #182029;
+    --color-text: #e6e9ed;
+    --color-muted: #a9b3be;
+    --color-border: #2f3a46;
+    --color-border-strong: #7d8a98;
+    --color-primary: #7cb8ff;
+    --color-primary-hover: #a6cfff;
+    --color-on-primary: #0b1520;
+    --color-error: #ff9b91;
+    --color-error-bg: #3a1d1c;
+    --color-success: #86e0a5;
+    --color-success-bg: #14301f;
+    --color-danger: #ff9b91;
+    --color-danger-bg: #3a1d1c;
+    --color-danger-hover: #ffc2bc;
+    --color-taken-bg: #232d38;
+    --color-yours-bg: #17314f;
+    --color-focus: #a6cfff;
+    --color-placeholder: #232d38;
+    --color-placeholder-shine: #2c3845;
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-bg: #0f1419;
+  --color-surface: #182029;
+  --color-text: #e6e9ed;
+  --color-muted: #a9b3be;
+  --color-border: #2f3a46;
+  --color-border-strong: #7d8a98;
+  --color-primary: #7cb8ff;
+  --color-primary-hover: #a6cfff;
+  --color-on-primary: #0b1520;
+  --color-error: #ff9b91;
+  --color-error-bg: #3a1d1c;
+  --color-success: #86e0a5;
+  --color-success-bg: #14301f;
+  --color-danger: #ff9b91;
+  --color-danger-bg: #3a1d1c;
+  --color-danger-hover: #ffc2bc;
+  --color-taken-bg: #232d38;
+  --color-yours-bg: #17314f;
+  --color-focus: #a6cfff;
+  --color-placeholder: #232d38;
+  --color-placeholder-shine: #2c3845;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
+}
+
+/* picked light while the system is dark: native controls (date field, select, scrollbars) follow */
+:root[data-theme="light"] { color-scheme: light; }

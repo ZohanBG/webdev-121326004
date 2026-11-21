@@ -2,32 +2,36 @@
 import { api } from './api.js';
 import { renderNav } from './nav.js';
 import { el } from './format.js';
+import { showLoading, doneLoading, showMessage } from './ui.js';
 
 const status = document.querySelector('#account-status');
 const errorBox = document.querySelector('#account-error');
 const errorText = document.querySelector('#account-error-text');
-const card = document.querySelector('#account');
+const region = document.querySelector('#account-region');
+const content = document.querySelector('#account');
 const form = document.querySelector('#password-form');
 const notice = document.querySelector('#password-notice');
 const button = form.querySelector('button[type="submit"]');
 
+const ROLE = { student: 'Student', staff: 'Lab staff' };
+
 function method(name, on) {
   const item = el('li');
-  item.append(el('span', '', name), el('span', on ? 'badge' : 'badge badge-off', on ? 'On' : 'Off'));
+  item.append(el('span', '', name), el('span', on ? 'badge' : 'badge badge-neutral', on ? 'On' : 'Off'));
   return item;
 }
 
 async function load() {
-  status.textContent = 'Loading your account…';
-  status.hidden = false;
+  showLoading(region, status, 'Loading your account…');
   errorBox.hidden = true;
-  card.hidden = true;
+  content.hidden = true;
 
   const result = await api('/api/account');
   if (result.status === 401) {
     location.assign('/login');
     return;
   }
+  doneLoading(region);
   if (!result.ok) {
     status.hidden = true;
     errorText.textContent = result.error;
@@ -35,15 +39,18 @@ async function load() {
     return;
   }
   const account = result.data;
+  const google = account.providers.includes('google');
   document.querySelector('#account-email').textContent = account.email;
+  document.querySelector('#account-role').textContent = ROLE[account.role] ?? account.role;
   document.querySelector('#methods').replaceChildren(
     method('Email and password', account.hasPassword),
-    method('Google', account.providers.includes('google')),
+    method('Google', google),
   );
+  document.querySelector('#google-hint').hidden = google;
   document.querySelector('#password-title').textContent = account.hasPassword ? 'Change your password' : 'Set a password';
   document.querySelector('#current-wrap').hidden = !account.hasPassword;
   status.hidden = true;
-  card.hidden = false;
+  content.hidden = false;
 }
 
 form.addEventListener('submit', async (event) => {
@@ -56,9 +63,8 @@ form.addEventListener('submit', async (event) => {
   });
   button.disabled = false;
   button.textContent = 'Save password';
-  notice.className = `message ${result.ok ? 'success' : 'error'}`;
-  notice.textContent = result.ok ? 'Saved. You can now sign in with your email and this password.' : result.error;
-  notice.hidden = false;
+  showMessage(notice, result.ok ? 'success' : 'error',
+    result.ok ? 'Saved. You can now sign in with your email and this password.' : result.error);
   if (result.ok) {
     form.reset();
     await load();

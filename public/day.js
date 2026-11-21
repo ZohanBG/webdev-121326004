@@ -1,10 +1,13 @@
 // The day view: every workstation with its six blocks, and Book on the free ones.
 // All rules live on the server; this page only shows what /api/slots says and sends what the user pressed.
 // The date and the feature filter live in the URL, so a reload or Back shows the same view.
+// One markup for every width: styles.css lays a lab out as a grid (a row per workstation, a column per
+// block) on a wide screen and as a card per workstation on a narrow one.
 import { api } from './api.js';
 import { renderNav } from './nav.js';
-import { el, isoDate, longDate } from './format.js';
+import { el, firstOpenDay, longDate, weekdayFrom } from './format.js';
 import { loadFeatures, labelOf, featureTags, chipGroups } from './features-ui.js';
+import { symbol, showLoading, doneLoading, showEmpty, showMessage } from './ui.js';
 
 const dateInput = document.querySelector('#date');
 const heading = document.querySelector('#day-heading');
@@ -12,6 +15,7 @@ const notice = document.querySelector('#day-notice');
 const status = document.querySelector('#day-status');
 const errorBox = document.querySelector('#day-error');
 const errorText = document.querySelector('#day-error-text');
+const region = document.querySelector('#day-region');
 const content = document.querySelector('#day-content');
 const filterBox = document.querySelector('#filter-chips');
 const filterStatus = document.querySelector('#filter-status');
@@ -20,21 +24,12 @@ const suggestForm = document.querySelector('#suggest');
 const suggestButton = document.querySelector('#suggest-button');
 const suggestResult = document.querySelector('#suggest-result');
 
-const STATE_LABEL = { free: 'Free', taken: 'Taken', yours: 'Yours', past: 'Past' };
+// every state is a symbol and a word, never colour alone; screen readers get the word only
+const STATE = { free: ['○', 'Free'], taken: ['●', 'Taken'], yours: ['★', 'Yours'], past: ['–', 'Past'] };
 let user = null;
 let chosen = new Set();
-
-const isWeekend = (d) => d.getDay() === 0 || d.getDay() === 6;
-function weekdayFrom(date, step) {
-  const d = new Date(`${date}T12:00:00`);
-  do d.setDate(d.getDate() + step); while (isWeekend(d));
-  return isoDate(d);
-}
-function firstOpenDay() {
-  const d = new Date();
-  while (isWeekend(d)) d.setDate(d.getDate() + 1);
-  return isoDate(d);
-}
+// "See free slots" on the labs page links to /day#lab-<id>; the lab is scrolled to once it is drawn
+let jumpTo = location.hash.slice(1);
 
 /** The view as a URL: /day?date=…&features=a,b */
 function urlFor(date, features) {
@@ -51,27 +46,31 @@ function readUrl() {
 }
 
 function showNotice(text, kind) {
-  notice.className = `message ${kind}`;
-  notice.replaceChildren(el('span', '', text));
-  if (kind === 'success') {
-    const link = el('a', '', 'See my bookings');
-    link.href = '/my-bookings';
-    notice.append(' ', link);
+  if (kind !== 'success') {
+    showMessage(notice, kind, text);
+    return;
   }
-  notice.hidden = false;
+  const link = el('a', '', 'See my bookings');
+  link.href = '/my-bookings';
+  showMessage(notice, kind, text, ' ', link);
+}
+
+function stateLabel(state) {
+  const [char, word] = STATE[state];
+  const label = el('span', 'block-state');
+  label.append(symbol(char), word);
+  return label;
 }
 
 function renderBlock(ws, block) {
   const item = el('li', `block block-${block.state}`);
-  item.append(el('span', 'block-time', `${block.start}–${block.end}`));
+  item.append(el('span', 'block-time', `${block.start}–${block.end}`), stateLabel(block.state));
   if (block.state === 'free' && user?.role !== 'staff') {
-    const button = el('button', '', 'Book');
+    const button = el('button', 'block-book', 'Book');
     button.type = 'button';
     button.setAttribute('aria-label', `Book ${ws.label}, ${block.start}–${block.end}`);
     button.addEventListener('click', () => book(ws, block, button));
     item.append(button);
-  } else {
-    item.append(el('span', 'block-state', STATE_LABEL[block.state]));
   }
   return item;
 }
@@ -88,13 +87,39 @@ function renderWorkstation(ws) {
   return item;
 }
 
+/** The times above the grid's columns. Every block also carries its own time, so this row is for the eye only. */
+function timeHeader(blocks) {
+  const row = el('div', 'grid-head');
+  row.setAttribute('aria-hidden', 'true');
+  const times = el('div', 'grid-times');
+  times.append(...blocks.map((b) => el('span', '', `${b.start}–${b.end}`)));
+  row.append(el('span', 'grid-corner', 'Workstation'), times);
+  return row;
+}
+
 function renderLab(lab) {
-  const section = el('section', 'lab-day');
-  section.append(el('h2', '', `${lab.name} · Room ${lab.room}`));
+  const section = el('section', 'card lab-day');
+  section.id = `lab-${lab.id}`;
+  const title = el('h2', '', `${lab.name} · Room ${lab.room}`);
+  title.id = `lab-${lab.id}-title`;
+  section.setAttribute('aria-labelledby', title.id);
   const list = el('ul', 'workstations');
   list.append(...lab.workstations.map(renderWorkstation));
-  section.append(list);
+  section.append(title, timeHeader(lab.workstations[0].blocks), list);
   return section;
+}
+
+/** What the symbols mean. A screen reader already hears the word on every block, so this line is for the eye. */
+function legend() {
+  const line = el('p', 'legend');
+  line.setAttribute('aria-hidden', 'true');
+  for (const state of ['free', 'taken', 'yours', 'past']) {
+    const [char, word] = STATE[state];
+    const item = el('span', `legend-item block-${state}`);
+    item.append(el('span', 'symbol', char), word);
+    line.append(item);
+  }
+  return line;
 }
 
 /** Empty because of the filter: say so, and offer the way out. */
@@ -102,7 +127,7 @@ function showFilteredEmpty() {
   const clear = el('button', 'secondary', 'Clear filters');
   clear.type = 'button';
   clear.addEventListener('click', clearFilters);
-  status.replaceChildren(el('span', '', 'No workstation has all of these features on this day. '), clear);
+  showEmpty(status, el('p', '', 'No workstation has all of these features on this day.'), clear);
 }
 
 function describeFilter(count) {
@@ -114,8 +139,7 @@ function describeFilter(count) {
 async function load() {
   const date = dateInput.value;
   heading.textContent = date ? longDate(date) : '';
-  status.textContent = 'Loading the day…';
-  status.hidden = false;
+  showLoading(region, status, 'Loading the day…');
   errorBox.hidden = true;
   content.hidden = true;
   clearButton.hidden = chosen.size === 0;
@@ -127,6 +151,7 @@ async function load() {
     location.assign('/login');
     return;
   }
+  doneLoading(region);
   if (!result.ok) {
     status.hidden = true;
     filterStatus.textContent = '';
@@ -138,12 +163,16 @@ async function load() {
   filterStatus.textContent = describeFilter(count);
   if (result.data.labs.length === 0) {
     if (chosen.size) showFilteredEmpty();
-    else status.textContent = 'No workstations are open for booking yet. Ask the lab staff to add one.';
+    else showEmpty(status, 'No workstations are open for booking yet. Ask the lab staff to add one.');
     return;
   }
-  content.replaceChildren(...result.data.labs.map(renderLab));
+  content.replaceChildren(legend(), ...result.data.labs.map(renderLab));
   status.hidden = true;
   content.hidden = false;
+  if (jumpTo) {
+    document.getElementById(jumpTo)?.scrollIntoView({ block: 'start' });
+    jumpTo = '';
+  }
 }
 
 async function book(ws, block, button) {

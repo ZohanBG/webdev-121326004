@@ -4,38 +4,70 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Account · LabSpot</title>
+  <script src="/theme.js"></script>
   <link rel="stylesheet" href="/styles.css">
   <script type="module" src="/account.js"></script>
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="/labs">LabSpot</a>
-    <nav id="nav" class="nav" aria-label="Main"></nav>
-    <button id="sign-out" class="secondary" type="button">Sign out</button>
-  </header>
-  <main>
-    <h1>Account</h1>
-    <p id="account-status" class="muted" role="status">Loading your account…</p>
-    <div id="account-error" class="message error" role="alert" hidden>
-      <p id="account-error-text"></p>
-      <button id="account-retry" class="secondary" type="button">Try again</button>
+    <div class="topbar-inner">
+      <a class="brand" href="/labs">LabSpot</a>
+      <nav id="nav" class="nav" aria-label="Main"></nav>
+      <div class="account-box">
+        <span id="who" class="who"></span>
+        <button id="theme-toggle" class="secondary theme-toggle" type="button"><span class="symbol" aria-hidden="true">☾</span><span class="theme-word">Dark</span></button>
+        <button id="sign-out" class="secondary" type="button">Sign out</button>
+      </div>
     </div>
-    <div id="account" class="card narrow" hidden>
-      <p id="account-email" class="booking-when"></p>
-      <h2>Ways to sign in</h2>
-      <ul id="methods" class="methods"></ul>
+  </header>
+  <main class="readable">
+    <h1>Account</h1>
+    <p class="intro">Who you are signed in as, and the ways you can sign in.</p>
+    <div id="account-status" class="status" role="status"><span class="visually-hidden">Loading your account…</span></div>
+    <div id="account-error" class="message error" role="alert" hidden>
+      <span class="symbol" aria-hidden="true">!</span>
+      <div class="message-body">
+        <p id="account-error-text"></p>
+        <button id="account-retry" class="secondary" type="button">Try again</button>
+      </div>
+    </div>
+    <div id="account-region" class="region" aria-busy="true">
+      <div class="placeholders" aria-hidden="true">
+        <div class="placeholder"></div>
+        <div class="placeholder placeholder-card"></div>
+        <div class="placeholder placeholder-card"></div>
+      </div>
+      <div id="account" class="stack" hidden>
+        <section class="card" aria-labelledby="you-title">
+          <h2 id="you-title">Your account</h2>
+          <dl class="facts">
+            <dt>Email</dt>
+            <dd id="account-email"></dd>
+            <dt>Role</dt>
+            <dd id="account-role"></dd>
+          </dl>
+        </section>
 
-      <h2 id="password-title">Set a password</h2>
-      <div id="password-notice" class="message" role="status" hidden></div>
-      <form id="password-form" novalidate>
-        <div id="current-wrap" hidden>
-          <label for="current-password">Current password</label>
-          <input id="current-password" name="currentPassword" type="password" autocomplete="current-password">
-        </div>
-        <label for="new-password">New password (at least 10 characters)</label>
-        <input id="new-password" name="password" type="password" autocomplete="new-password" minlength="10" required>
-        <button type="submit">Save password</button>
-      </form>
+        <section class="card" aria-labelledby="methods-title">
+          <h2 id="methods-title">Ways to sign in</h2>
+          <ul id="methods" class="methods"></ul>
+          <p id="google-hint" class="muted hint" hidden>To add Google, sign out and choose Sign in with Google with this same email. That turns off your current password; you can then set a new one here.</p>
+        </section>
+
+        <section class="card" aria-labelledby="password-title">
+          <h2 id="password-title">Set a password</h2>
+          <div id="password-notice" class="message" role="status" hidden></div>
+          <form id="password-form" class="form" novalidate>
+            <div id="current-wrap" hidden>
+              <label for="current-password">Current password</label>
+              <input id="current-password" name="currentPassword" type="password" autocomplete="current-password">
+            </div>
+            <label for="new-password">New password (at least 10 characters)</label>
+            <input id="new-password" name="password" type="password" autocomplete="new-password" minlength="10" required>
+            <button type="submit">Save password</button>
+          </form>
+        </section>
+      </div>
     </div>
   </main>
 </body>

@@ -1,4 +1,5 @@
 import { api } from './api.js';
+import { showMessage } from './ui.js';
 
 const form = document.querySelector('#login-form');
 const errorBox = document.querySelector('#login-error');
@@ -7,8 +8,7 @@ const button = form.querySelector('button[type="submit"]');
 // a refusal from Sign in with Google comes back as ?error=<a sentence to show>
 const sent = new URLSearchParams(location.search).get('error');
 if (sent) {
-  errorBox.textContent = sent;
-  errorBox.hidden = false;
+  showMessage(errorBox, 'error', sent);
   history.replaceState(null, '', '/login');
 }
 
@@ -27,8 +27,7 @@ form.addEventListener('submit', async (event) => {
     return;
   }
 
-  errorBox.textContent = result.error;
-  errorBox.hidden = false;
+  showMessage(errorBox, 'error', result.error);
   button.disabled = false;
   button.textContent = 'Sign in';
   form.password.value = '';

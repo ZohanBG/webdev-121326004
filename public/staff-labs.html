@@ -4,22 +4,30 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Manage labs · LabSpot</title>
+  <script src="/theme.js"></script>
   <link rel="stylesheet" href="/styles.css">
   <script type="module" src="/staff-labs.js"></script>
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="/labs">LabSpot</a>
-    <nav id="nav" class="nav" aria-label="Main"></nav>
-    <button id="sign-out" class="secondary" type="button">Sign out</button>
+    <div class="topbar-inner">
+      <a class="brand" href="/labs">LabSpot</a>
+      <nav id="nav" class="nav" aria-label="Main"></nav>
+      <div class="account-box">
+        <span id="who" class="who"></span>
+        <button id="theme-toggle" class="secondary theme-toggle" type="button"><span class="symbol" aria-hidden="true">☾</span><span class="theme-word">Dark</span></button>
+        <button id="sign-out" class="secondary" type="button">Sign out</button>
+      </div>
+    </div>
   </header>
   <main>
     <h1>Manage labs</h1>
+    <p class="intro">Add labs and workstations, set their features, and take a workstation out of service.</p>
     <div id="staff-notice" class="message" role="status" hidden></div>
 
     <div class="forms">
-      <form id="add-lab" class="card">
-        <h2>Add a lab</h2>
+      <form id="add-lab" class="card form" aria-labelledby="add-lab-title">
+        <h2 id="add-lab-title">Add a lab</h2>
         <label for="lab-name">Name</label>
         <input id="lab-name" name="name" required maxlength="100">
         <label for="lab-room">Room</label>
@@ -27,8 +35,8 @@
         <button type="submit">Add lab</button>
       </form>
 
-      <form id="add-workstation" class="card">
-        <h2>Add a workstation</h2>
+      <form id="add-workstation" class="card form" aria-labelledby="add-ws-title">
+        <h2 id="add-ws-title">Add a workstation</h2>
         <label for="ws-lab">Lab</label>
         <select id="ws-lab" name="labId" required></select>
         <label for="ws-label">Label</label>
@@ -40,12 +48,21 @@
     </div>
 
     <h2 class="section-title">Labs and workstations</h2>
-    <p id="staff-status" class="muted" role="status">Loading labs…</p>
+    <div id="staff-status" class="status" role="status"><span class="visually-hidden">Loading labs…</span></div>
     <div id="staff-error" class="message error" role="alert" hidden>
-      <p id="staff-error-text"></p>
-      <button id="staff-retry" class="secondary" type="button">Try again</button>
+      <span class="symbol" aria-hidden="true">!</span>
+      <div class="message-body">
+        <p id="staff-error-text"></p>
+        <button id="staff-retry" class="secondary" type="button">Try again</button>
+      </div>
     </div>
-    <div id="staff-labs" hidden></div>
+    <div id="staff-region" class="region" aria-busy="true">
+      <div class="placeholders" aria-hidden="true">
+        <div class="placeholder placeholder-card"></div>
+        <div class="placeholder placeholder-card"></div>
+      </div>
+      <div id="staff-labs" class="stack" hidden></div>
+    </div>
   </main>
 </body>
 </html>

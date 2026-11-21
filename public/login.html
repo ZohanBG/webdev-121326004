@@ -4,27 +4,33 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sign in · LabSpot</title>
+  <script src="/theme.js"></script>
   <link rel="stylesheet" href="/styles.css">
   <script type="module" src="/login.js"></script>
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="/login">LabSpot</a>
+    <div class="topbar-inner">
+      <a class="brand" href="/login">LabSpot</a>
+      <div class="account-box">
+        <button id="theme-toggle" class="secondary theme-toggle" type="button"><span class="symbol" aria-hidden="true">☾</span><span class="theme-word">Dark</span></button>
+      </div>
+    </div>
   </header>
   <main>
     <div class="card narrow">
       <h1>Sign in</h1>
-      <p class="muted">Book a workstation in the TU-Sofia labs.</p>
+      <p class="intro">Book a workstation in the TU-Sofia labs.</p>
       <div id="login-error" class="message error" role="alert" hidden></div>
-      <form id="login-form" novalidate>
+      <form id="login-form" class="form" novalidate>
         <label for="email">Email</label>
         <input id="email" name="email" type="email" autocomplete="username" required>
         <label for="password">Password</label>
         <input id="password" name="password" type="password" autocomplete="current-password" required>
-        <button type="submit">Sign in</button>
+        <button class="wide" type="submit">Sign in</button>
       </form>
-      <p class="or muted">or</p>
-      <a class="button secondary" href="/api/auth/google">Sign in with Google</a>
+      <p class="or"><span>or</span></p>
+      <a class="button secondary wide" href="/api/auth/google">Sign in with Google</a>
     </div>
   </main>
 </body>

@@ -38,6 +38,7 @@ Lab booking.
 - A student holds at most 3 upcoming active bookings and at most one booking per time block. Bookings are possible for upcoming blocks up to 14 days ahead.
 - "One workstation, one block, one active booking" and "one student, one block, one active booking" are each enforced by a unique index on active bookings in the database, not only by a check in code. The 3-booking limit is checked inside a transaction that locks the student's row, so two parallel requests cannot both pass it.
 - Workstation features come from a fixed list of 16 ids in four groups, kept in one place in code (`src/services/features.js`, with a label for each); the database's CHECK repeats the ids and a test keeps the two equal. Hardware: `high-end-pc` (High-end PC, 32 GB+ RAM), `gpu-cuda` (NVIDIA GPU, CUDA), `gpu-server` (Access to the GPU server), `dual-monitor` (Dual monitors), `drawing-tablet` (Drawing tablet). Software / OS: `linux`, `windows`, `matlab`, `cad` (AutoCAD / SolidWorks), `docker-vm` (Docker / VM ready). Lab equipment: `electronics-bench` (oscilloscope, soldering), `network-rack` (Cisco), `fpga-kit` (FPGA / microcontroller kit), `plc-trainer` (Siemens S7). Environment: `quiet` (Quiet zone), `accessible` (Wheelchair accessible). Staff set them when adding or editing a workstation; any other id is refused.
+- GET /api/features is public: it returns only the fixed feature labels, no user or database data.
 
 ## The model feature
 <!-- Which model, which modality, and what it does for a user.

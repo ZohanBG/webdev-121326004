@@ -42,16 +42,25 @@ export function chipGroups(selected, onChange, { idPrefix = 'chips' } = {}) {
     title.id = titleId;
     const row = el('div', 'chip-row');
     for (const feature of group.features) {
-      const chip = el('button', 'chip-toggle', feature.label);
+      // "+" (add it) or "✓" (on), as well as the fill, so the state is not colour alone. Screen readers skip
+      // the symbol and read aria-pressed. Both symbols take about the same space, so a press does not move the row.
+      const tick = el('span', 'chip-tick');
+      tick.setAttribute('aria-hidden', 'true');
+      const chip = el('button', 'chip-toggle');
+      chip.append(tick, el('span', '', feature.label));
       chip.type = 'button';
       chip.dataset.feature = feature.id;
-      chip.setAttribute('aria-pressed', String(selected.has(feature.id)));
+      const show = (on) => {
+        chip.setAttribute('aria-pressed', String(on));
+        tick.textContent = on ? '✓' : '+';
+      };
+      show(selected.has(feature.id));
       chip.addEventListener('click', () => {
         const next = new Set(selected);
         if (next.has(feature.id)) next.delete(feature.id);
         else next.add(feature.id);
         selected = next;
-        chip.setAttribute('aria-pressed', String(next.has(feature.id)));
+        show(next.has(feature.id));
         onChange(next);
       });
       row.append(chip);

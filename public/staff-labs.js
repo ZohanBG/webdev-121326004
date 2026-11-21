@@ -3,6 +3,7 @@ import { api } from './api.js';
 import { renderNav } from './nav.js';
 import { el } from './format.js';
 import { loadFeatures, featureTags, chipGroups, pressedIn } from './features-ui.js';
+import { symbol, showLoading, doneLoading, showEmpty, showMessage } from './ui.js';
 
 let featuresReady = false;
 
@@ -10,13 +11,12 @@ const notice = document.querySelector('#staff-notice');
 const status = document.querySelector('#staff-status');
 const errorBox = document.querySelector('#staff-error');
 const errorText = document.querySelector('#staff-error-text');
+const region = document.querySelector('#staff-region');
 const content = document.querySelector('#staff-labs');
 const labSelect = document.querySelector('#ws-lab');
 
 function showNotice(text, kind) {
-  notice.className = `message ${kind}`;
-  notice.textContent = text;
-  notice.hidden = false;
+  showMessage(notice, kind, text);
   notice.scrollIntoView({ block: 'nearest' });
 }
 
@@ -39,7 +39,9 @@ async function act(button, busyText, request, successText) {
 function renderWorkstation(ws) {
   const item = el('li', 'staff-ws');
   const head = el('div', 'staff-ws-head');
-  head.append(el('h4', '', ws.label), el('span', ws.inService ? 'badge' : 'badge badge-off', ws.inService ? 'In service' : 'Out of service'));
+  const state = el('span', ws.inService ? 'badge' : 'badge badge-off');
+  state.append(symbol(ws.inService ? '✓' : '⏸'), ws.inService ? 'In service' : 'Out of service');
+  head.append(el('h4', '', ws.label), state);
 
   const current = ws.features.length ? featureTags(ws.features, `${ws.label} features`) : el('p', 'muted', 'No features listed.');
 
@@ -109,8 +111,7 @@ function renderLab(lab) {
 }
 
 async function load() {
-  status.textContent = 'Loading labs…';
-  status.hidden = false;
+  showLoading(region, status, 'Loading labs…');
   errorBox.hidden = true;
   content.hidden = true;
 
@@ -119,6 +120,7 @@ async function load() {
     location.assign('/login');
     return;
   }
+  doneLoading(region);
   if (!result.ok) {
     status.hidden = true;
     errorText.textContent = result.error;
@@ -134,7 +136,7 @@ async function load() {
   if (selected) labSelect.value = selected;
 
   if (result.data.length === 0) {
-    status.textContent = 'No labs yet. Add the first one with the form above.';
+    showEmpty(status, 'No labs yet. Add the first one with the form above.');
     return;
   }
   content.replaceChildren(...result.data.map(renderLab));

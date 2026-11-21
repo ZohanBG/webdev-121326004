@@ -4,26 +4,34 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Day view · LabSpot</title>
+  <script src="/theme.js"></script>
   <link rel="stylesheet" href="/styles.css">
   <script type="module" src="/day.js"></script>
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="/labs">LabSpot</a>
-    <nav id="nav" class="nav" aria-label="Main"></nav>
-    <button id="sign-out" class="secondary" type="button">Sign out</button>
+    <div class="topbar-inner">
+      <a class="brand" href="/labs">LabSpot</a>
+      <nav id="nav" class="nav" aria-label="Main"></nav>
+      <div class="account-box">
+        <span id="who" class="who"></span>
+        <button id="theme-toggle" class="secondary theme-toggle" type="button"><span class="symbol" aria-hidden="true">☾</span><span class="theme-word">Dark</span></button>
+        <button id="sign-out" class="secondary" type="button">Sign out</button>
+      </div>
+    </div>
   </header>
   <main>
     <h1>Day view</h1>
+    <p class="intro">Every workstation on one weekday in the next two weeks, in two-hour blocks.</p>
     <form id="day-picker" class="day-picker">
       <button id="prev-day" class="secondary" type="button" aria-label="Previous weekday">‹</button>
       <label for="date" class="visually-hidden">Date</label>
       <input id="date" name="date" type="date" required>
       <button id="next-day" class="secondary" type="button" aria-label="Next weekday">›</button>
     </form>
-    <p id="day-heading" class="muted"></p>
+    <p id="day-heading" class="day-heading"></p>
 
-    <form id="suggest" class="card suggest" hidden>
+    <form id="suggest" class="card suggest form" hidden>
       <label for="suggest-text">Describe what you need</label>
       <textarea id="suggest-text" name="text" rows="2" maxlength="300" required
         placeholder="e.g. quiet place with two monitors, Thursday afternoon"></textarea>
@@ -42,12 +50,21 @@
     </section>
 
     <div id="day-notice" class="message" role="status" hidden></div>
-    <p id="day-status" class="muted" role="status">Loading the day…</p>
+    <div id="day-status" class="status" role="status"><span class="visually-hidden">Loading the day…</span></div>
     <div id="day-error" class="message error" role="alert" hidden>
-      <p id="day-error-text"></p>
-      <button id="day-retry" class="secondary" type="button">Try again</button>
+      <span class="symbol" aria-hidden="true">!</span>
+      <div class="message-body">
+        <p id="day-error-text"></p>
+        <button id="day-retry" class="secondary" type="button">Try again</button>
+      </div>
     </div>
-    <div id="day-content" hidden></div>
+    <div id="day-region" class="region" aria-busy="true">
+      <div class="placeholders" aria-hidden="true">
+        <div class="placeholder placeholder-title"></div>
+        <div class="placeholder placeholder-lab"></div>
+      </div>
+      <div id="day-content" hidden></div>
+    </div>
   </main>
 </body>
 </html>

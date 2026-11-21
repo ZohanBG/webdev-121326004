@@ -4,17 +4,27 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Not allowed · LabSpot</title>
+  <script src="/theme.js"></script>
   <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/forbidden.js"></script>
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="/labs">LabSpot</a>
+    <div class="topbar-inner">
+      <a class="brand" href="/labs">LabSpot</a>
+      <nav id="nav" class="nav" aria-label="Main"></nav>
+      <div class="account-box">
+        <span id="who" class="who"></span>
+        <button id="theme-toggle" class="secondary theme-toggle" type="button"><span class="symbol" aria-hidden="true">☾</span><span class="theme-word">Dark</span></button>
+        <button id="sign-out" class="secondary" type="button">Sign out</button>
+      </div>
+    </div>
   </header>
   <main>
     <div class="card narrow">
       <h1>Not allowed</h1>
       <p>Only lab staff can open this page.</p>
-      <p><a href="/labs">Back to the labs</a></p>
+      <a class="button" href="/labs">Back to the labs</a>
     </div>
   </main>
 </body>
