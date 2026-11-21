@@ -1,0 +1,84 @@
+{
+ "keyboardBooked": {
+  "button": "Book GL-01, 12:00–14:00",
+  "notice": "✓ Booked GL-01 on Monday 23 November, 12:00–14:00. See my bookings"
+ },
+ "keyboardFlow": [
+  "Tab ×3 to Email, typed it",
+  "Tab ×1 to Password, typed it, Enter",
+  "Tab ×3 to \"Day\" in the menu, Enter",
+  "Tab ×32 to the first \"Book\", Enter",
+  "Shift+Tab ×25 to \"Sign out\", Enter",
+  "back on /login"
+ ],
+ "loginTabs": 3,
+ "loginFocusRing": "solid 3px",
+ "emailName": "Email",
+ "lang": "en",
+ "title": "Sign in · LabSpot",
+ "loadingPlaceholders": 3,
+ "placeholderTop": 172,
+ "contentTop": 172,
+ "errorText": "Could not reach the server. Check your connection and try again.",
+ "bookingsBefore": 2,
+ "successText": "✓ Cancelled NL-03 on Mon 23 Nov, 14:00–16:00.",
+ "bookingsAfter": 1,
+ "noReload": true,
+ "emptyText": "You have no upcoming bookings. Pick a free slot",
+ "day380": {
+  "layout": "cards",
+  "noSideScroll": true
+ },
+ "day768": {
+  "layout": "grid",
+  "noSideScroll": true
+ },
+ "day1280": {
+  "layout": "grid",
+  "noSideScroll": true
+ },
+ "bookTabs": 32,
+ "bookFocus": {
+  "name": "Book GL-01, 12:00–14:00",
+  "ring": "solid 3px"
+ },
+ "bookSize": {
+  "width": 113,
+  "height": 44,
+  "label": "Book GL-01, 12:00–14:00"
+ },
+ "contrast": {
+  "fg": "rgb(74, 83, 96)",
+  "bg": "rgb(245, 246, 248)",
+  "ratio": "7.20"
+ },
+ "thinking": {
+  "text": "Finding a slot…",
+  "disabled": true
+ },
+ "suggestion": [
+  "SUGGESTION",
+  "NL-03, Networks Lab · Monday 23 November, 16:00–18:00",
+  "Workstation features",
+  "From LabSpot's records",
+  "Quiet zone",
+  "Dual monitors"
+ ],
+ "failed": {
+  "text": "Suggestions are not available right now. Pick a free slot from the list below.",
+  "gridStillThere": true
+ },
+ "waterfall": {
+  "requests": 13,
+  "finishMs": 23,
+  "apiOrder": [
+   "/api/auth/me",
+   "/api/features",
+   "/api/slots"
+  ]
+ },
+ "dark": {
+  "theme": "dark",
+  "bg": "rgb(15, 20, 25)"
+ }
+}

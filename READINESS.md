@@ -43,6 +43,7 @@ How I checked: `node src/server.js` without `DATABASE_URL` printed `missing DATA
 | Body over 10 kB | 413 "The request body is too large." | my own `curl.exe` run locally; test AC-44 |
 | A write without a session | 401 "Sign in first." | the agent's `curl.exe` run against the live site (Msg 16) |
 | Model slow, rate-limited (429), overloaded (503) or wrong | "Suggestions are not available right now. Pick a free slot from the list below."; nothing is booked | tests AC-18 and AC-41 |
+| No model key (`GEMINI_API_KEY` not set) | the same fallback sentence, and the day grid still works | **local, not the live site**: the Docker image with no key on a throw-away database ([model-key-off.png](docs/ui/model-key-off.png)) |
 | Neon closes an idle connection | no crash; one log line | the pool's `'error'` listener in `src/data/db.js`; test "AC-42 the pool survives a lost idle connection" |
 | Container stopped or redeployed | closes in under a second on SIGTERM, exit code 0 | my own `docker stop`: "SIGTERM: closing", exit code 0 |
 | Rollback to the previous deploy | **unverified**: not timed yet | see section 7 |
@@ -51,19 +52,25 @@ No response contains a stack trace (my own checks above, and test AC-44).
 
 ## 4. Four states of one screen
 
-**Unverified on the live site.** I have not yet recorded loading (Slow 4G), content, empty and error (Offline) on the deployment, and the `docs/ui/` screenshots from the live site are still missing.
+**Shown locally, not on the live site.** My bookings in all four states, plus success, on a local test server (the real app on an in-process test database with the test seed), with `node scripts/ui/screenshots.mjs` in headless Chrome:
 
-What is verified is local: loading, content, empty, error and success were measured against a test server with `scripts/ui/measure.mjs` (headless Chrome), and the results are in `docs/UI.md` under Measurements.
+- **Loading:** the bookings request held: three grey placeholders, the region `aria-busy` ([loading.png](docs/ui/loading.png)).
+- **Content:** the list appears where the placeholders were, at the same 172 px from the top ([content.png](docs/ui/content.png)).
+- **Empty:** a student with no bookings: "You have no upcoming bookings." and "Pick a free slot" ([empty.png](docs/ui/empty.png)).
+- **Error:** the request failed as offline: the red "!" box "Could not reach the server. Check your connection and try again." ([error.png](docs/ui/error.png)).
+- **Success:** Cancel gives the green ✓ "Cancelled …" notice and the list shrinks from 2 to 1 without a reload ([success.png](docs/ui/success.png)).
 
-How I checked: `docs/UI.md`, `scripts/ui/measure.mjs`; the live check is listed as a gap in section 7.
+Still to do on the live site: the same four states with Slow 4G and Offline in DevTools (gap 7).
+
+How I checked: `docs/ui/` and `docs/UI.md` (Evidence); every screenshot is labelled "local test server".
 
 ## 5. Request waterfall
 
-**Unverified on the live site:** I have not yet measured the request count and the Finish time in DevTools.
+**Shown locally, not on the live site.** On the local test server, headless Chrome with the cache disabled and no throttling, the Day view as a student made **13 requests** and finished in **23 ms**. The API calls start one after the other: `/api/auth/me` → `/api/features` → `/api/slots`; `tokens.css` also waits for `styles.css`, and the page's modules wait for `day.js`. On the live site each of those round trips also crosses the network to Frankfurt, so the real Finish time is longer and still to be measured (gap 7).
 
 From the code, the Day view makes three requests in sequence before the grid appears: `/api/auth/me` → `/api/features` → `/api/slots`. `/api/features` is public and does not need `/api/auth/me`, so it could run in parallel and save one round trip.
 
-How I checked: the rendering table in `SPEC.md` under Architecture, reviewed against `public/day.js`.
+How I checked: [docs/ui/waterfall.txt](docs/ui/waterfall.txt) (every request with its start and end, from `scripts/ui/screenshots.mjs`); the rendering table in `SPEC.md` under Architecture, reviewed against `public/day.js`.
 
 ## 6. Security basics checked
 
@@ -71,7 +78,7 @@ How I checked: the rendering table in `SPEC.md` under Architecture, reviewed aga
 - **No `.env` in the image**, and it runs as a non-root user. How I checked: `docker run --rm --entrypoint find labspot /app -name ".env*"` printed nothing; `id -un` printed `node`.
 - **HTTPS** on the live URL (`checks/ex4.mjs`).
 - **Unauthenticated writes get 401** (the agent's `curl.exe` run against the live site, Msg 16; the full list of write endpoints with their 401 and 403 lines is in the same log entry).
-- **A signed-in non-owner gets 403** when cancelling someone else's booking (`src/services/bookings.js:94`; tests AC-9 for HTTP and AC-22 for MCP). **Unverified on the live site** with a second account.
+- **A signed-in non-owner gets 403** when cancelling someone else's booking (`src/services/bookings.js:94`; tests AC-9 for HTTP and AC-22 for MCP). **Shown locally, not on the live site:** the Docker image on a throw-away database: student 1 booked (201); student 2 sent `DELETE /api/bookings/1` and got **403** "You can only cancel your own bookings."; the booking stayed `active` in student 1's list ([second-account.txt](docs/ui/second-account.txt), every request with its status).
 - **Session cookie:** `HttpOnly` stops page scripts reading the token (XSS); `SameSite=Lax` stops other sites sending forms as the user (CSRF); `Secure` in production keeps it off plain http (`src/routes/session.js:14-19`). That `Secure` is really set on the live site is **unverified** (DevTools → Application → Cookies).
 - **Sessions** last 7 days (`src/services/auth.js:7`). Passwords are bcrypt hashes; the session id is stored only as SHA-256.
 - **`/health` and `/api/features` are public** and reveal nothing about users or the server (AC-42, SPEC Constraints).
@@ -79,13 +86,13 @@ How I checked: the rendering table in `SPEC.md` under Architecture, reviewed aga
 ## 7. Known gaps, ranked by risk
 
 1. **Shared seed password and no limit on sign-in attempts.** The three seeded accounts, one of them staff, share `SEED_PASSWORD` on the live site, and nothing slows down guessing. Whoever gets in as staff can cancel any booking and change labs. I kept the password on purpose. Next step: a unique staff password and a per-account limit on sign-in attempts.
-2. **The second-account 403 check is not tried on the live site.** Code and tests cover it (AC-9, AC-22), but I have not proved it on the deployment. Next step: run the `DELETE` as `student2@` against `student@`'s booking on the live site before Exercise 5.
+2. **The second-account 403 check: shown locally, not yet on the live site.** Code and tests cover it (AC-9, AC-22), and the local Docker image refused it (section 6), but I have not proved it on the deployment. Next step: run the `DELETE` as `student2@` against `student@`'s booking on the live site before Exercise 5.
 3. **Rollback is not timed.** I don't yet know how long recovery from a bad deploy takes. Next step: do the timed rollback in Render before Exercise 5 and record the seconds here.
 4. **`MCP_TOKEN` is a full session token valid for 7 days.** If it leaks, someone acts as that user until it expires. Next step: use a student account's token only (never staff), and sign out that session to revoke it if it leaks.
 5. **Render's free tier sleeps after about 15 minutes without traffic.** The first visitor waits for it to wake (first measurement: `node checks/ex4.mjs` waited 13 s for the sleeping service on 21 November 2026), and a paused Neon adds its own wake-up on the first query. Next step: accept it for a course project, measure one cold start, and say so at the defense.
 6. **Shared Gemini free quota.** A 429 is likely when the class uses it at the same time; suggestions then fall back, which is safe but makes the feature often unavailable. Next step: accept it; a paid key would remove it at the cost per call in section 8.
-7. **Four states and waterfall not recorded on the live site** (sections 4 and 5); `docs/ui/` screenshots from the deployment are missing. Next step: record them with DevTools (Slow 4G, Offline, Disable cache) and add the screenshots before handing in.
-8. **The Day view's requests are sequential.** Three round trips before the grid. Next step: fetch `/api/features` in parallel with `/api/auth/me`.
+7. **Four states and waterfall: shown locally, not yet on the live site** (sections 4 and 5). The `docs/ui/` screenshots come from a local test server. Next step: record them with DevTools (Slow 4G, Offline, Disable cache) and add the screenshots before handing in.
+8. **The Day view's requests are sequential: shown locally, not yet on the live site.** Three round trips before the grid (locally 13 requests in 23 ms, section 5). Next step: fetch `/api/features` in parallel with `/api/auth/me`.
 9. **The model prompt carries every free slot for 14 days.** About 9,000 input tokens per call, almost all of it the slot list. Next step: when the student names a day, send only that day's slots, which would cut the input several times over.
 10. **`src/server.js` shows 0% coverage.** Its start-up and shutdown are tested in child processes, which coverage cannot see, so the 80% gate says nothing about it. Next step: accept it; the child-process tests in `test/config.test.js` are the evidence.
 
@@ -99,7 +106,7 @@ How I checked: the rendering table in `SPEC.md` under Architecture, reviewed aga
   - total: about **$0.003 per call**, and with 10 calls per student per day (AC-29) about **$0.03 per student per day**.
 
   The token count is an estimate at about 4 characters per token, not Google's tokenizer; one real call would return the exact `promptTokenCount`. How I checked: the AI Studio API keys page; the prompt of one worst-case call measured by the agent on the seeded test database with a fake client that records the request instead of sending it (Msg 22); the price row for `gemini-3.5-flash-lite` on Google's pricing page; `suggest.js`; the tests.
-- **When the provider is down or slow:** an 8-second timeout, no retry, and the fallback sentence; nothing is booked (AC-18). Turning the key off on the live site has **not** been tried.
+- **When the provider is down or slow:** an 8-second timeout, no retry, and the fallback sentence; nothing is booked (AC-18). With no key, the local Docker image shows the fallback and the day view still works ([model-key-off.png](docs/ui/model-key-off.png)); turning the key off on the live site has **not** been tried.
 - **When the model is wrong:** the answer must name a slot that was sent and is still free, and every feature id it claims must belong to that workstation; otherwise it counts as invalid and falls back (AC-41).
 
 ## 9. MCP

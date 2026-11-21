@@ -1,0 +1,8 @@
+Second-account check (step 10 D). LOCAL: the Docker image on port 3003 with a throw-away Postgres container and a throw-away seed password; not Neon, not the live site.
+student1  POST /api/auth/login {"email":"student@labspot.test","password":"***"} -> 200 {"user":{"id":1,"email":"student@labspot.test","role":"student"}}
+student2  POST /api/auth/login {"email":"student2@labspot.test","password":"***"} -> 200 {"user":{"id":3,"email":"student2@labspot.test","role":"student"}}
+student1  GET /api/slots?date=2026-11-23 -> 200 {"date":"2026-11-23","labs":[{"id":2,"name":"GPU Lab","room":"1418","workstations":[{"id":5,"label":"GL-01","features":["gpu-cuda","high-end-pc","linux","docker…
+student1  POST /api/bookings {"workstationId":5,"date":"2026-11-23","block":3} -> 201 {"id":1,"userId":1,"workstationId":5,"date":"2026-11-23","block":3,"status":"active"}
+student2  DELETE /api/bookings/1 -> 403 {"error":"You can only cancel your own bookings."}
+student1  GET /api/bookings -> 200 [{"id":1,"date":"2026-11-23","block":3,"start":"12:00","end":"14:00","lab":"GPU Lab","workstation":"GL-01","status":"active","cancelledByStaff":false}]
+Result: student2's DELETE was refused; booking 1 is still in student1's list with status "active".

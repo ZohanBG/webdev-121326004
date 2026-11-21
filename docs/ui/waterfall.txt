@@ -1,0 +1,19 @@
+Request waterfall of the Day view (/day?date=2026-11-23) as a student.
+LOCAL TEST SERVER (in-process app, PGlite test database), not the live site. Headless Chrome, cache disabled, no throttling.
+Requests: 13. Finish: 23 ms (from the first request to the last response).
+API calls, in the order they start: /api/auth/me -> /api/features -> /api/slots
+
+ start    end    status path                                 timeline
+    0 ms     3 ms  200  /day?date=2026-11-23                 ########
+    5 ms     9 ms  200  /theme.js                                         ##########
+    6 ms     9 ms  200  /styles.css                                          ########
+    6 ms    10 ms  200  /day.js                                              ##########
+   10 ms    14 ms  200  /tokens.css                                                    ##########
+   11 ms    14 ms  200  /api.js                                                           ########
+   11 ms    15 ms  200  /nav.js                                                           ##########
+   11 ms    15 ms  200  /format.js                                                        ##########
+   11 ms    15 ms  200  /features-ui.js                                                   ##########
+   11 ms    15 ms  200  /ui.js                                                            ##########
+   16 ms    17 ms  200  /api/auth/me                                                                   ###
+   19 ms    20 ms  200  /api/features                                                                          ###
+   21 ms    23 ms  200  /api/slots?date=2026-11-23                                                                  #####
