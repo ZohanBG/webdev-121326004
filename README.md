@@ -28,6 +28,7 @@ The course setup page explains accounts, sign-in, free limits and what to do if 
 | `mcp-server/` | Exercise 1, with `lectures.json`, `messages.jsonl` and the self-check `check.mjs` |
 | `checks/` | One self-check per exercise: `node checks/ex2.mjs`, `ex3`, `ex4`, `ex5`, plus `project.mjs` before the defence |
 | `docs/UI.md` | The UI checklist your project is graded against (Exercise 4) |
+| `scripts/ui/` | How the numbers in `docs/UI.md` were measured: `node scripts/ui/contrast.mjs` (contrast of every colour pair in both themes) and `node scripts/ui/measure.mjs` (widths, breakpoints, the four states, the keyboard and the theme button, in headless Chrome or Edge on its own test database; it never reads `.env`) |
 | `DEFENSE.md` | Your notes for the defence (Exercise 5) |
 | `.env.example` | Every environment variable your app needs, with placeholder values |
 | `course.json` | How to start your MCP server, and where your deployment answers |

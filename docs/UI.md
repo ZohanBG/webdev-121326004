@@ -72,8 +72,8 @@ A screen that only handles "it worked" is a screen that lies to the user on the 
 
 ### Contrast, both themes
 
-Tool: a small Node script using the WCAG 2.2 relative-luminance formula, which reads the colour values
-straight from `public/tokens.css` (the light values in `:root`, the dark ones in the dark blocks),
+Tool: `node scripts/ui/contrast.mjs`, a small Node script using the WCAG 2.2 relative-luminance formula,
+which reads the colour values straight from `public/tokens.css` (the light values in `:root`, the dark ones in the dark blocks),
 so the table matches the file. Text needs 4.5:1. The edges of
 controls and the focus ring need 3:1 (WCAG 1.4.11). Spot-check a few pairs in Chrome DevTools
 (Inspect → the colour swatch → Contrast ratio).
@@ -111,8 +111,8 @@ They now use `border-strong`. Disabled buttons are dimmed and exempt.
 
 ### Breakpoints
 
-Measured in headless Chrome through the DevTools protocol, against a separate test server (the real
-app on an in-process PGlite database with the test seed, a fixed clock and a fake model; not the
+Measured with `node scripts/ui/measure.mjs`: headless Chrome through the DevTools protocol, against a
+separate test server (the real app on an in-process PGlite database with the test seed, a fixed clock and a fake model; not the
 development database). Chrome drew a classic 15 px scrollbar on long pages, so a 768 px window has
 753 px for the page.
 
