@@ -27,6 +27,11 @@ function renderBooking(b) {
   const item = el('li', 'booking');
   const text = el('div', 'booking-text');
   text.append(el('p', 'booking-when', `${readableDate(b.date)} · ${b.start}–${b.end}`), el('p', 'muted', `${b.workstation}, ${b.lab}`));
+  if (b.cancelledByStaff) {
+    item.classList.add('booking-cancelled');
+    item.append(text, el('span', 'badge badge-off', 'Cancelled by lab staff'));
+    return item;
+  }
   const button = el('button', 'secondary', 'Cancel');
   button.type = 'button';
   button.setAttribute('aria-label', `Cancel ${b.workstation} on ${readableDate(b.date)}, ${b.start}–${b.end}`);

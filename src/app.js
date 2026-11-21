@@ -5,6 +5,8 @@ import authRoutes from './routes/auth.js';
 import labRoutes from './routes/labs.js';
 import bookingRoutes from './routes/bookings.js';
 import slotRoutes from './routes/slots.js';
+import workstationRoutes from './routes/workstations.js';
+import adminRoutes from './routes/admin.js';
 import pageRoutes from './routes/pages.js';
 import { notFound, errorHandler } from './routes/errors.js';
 
@@ -27,6 +29,8 @@ export function createApp({ db, secureCookies = false, now = () => new Date() })
   // who you are is settled here, before any service runs (401); what you may do is the service's call (403)
   app.use('/api/bookings', requireSignIn, bookingRoutes);
   app.use('/api/slots', requireSignIn, slotRoutes);
+  app.use('/api/workstations', requireSignIn, workstationRoutes);
+  app.use('/api/admin', requireSignIn, adminRoutes);
   app.use('/api', notFound);
 
   app.use(pageRoutes);

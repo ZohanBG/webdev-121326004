@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Manage labs · LabSpot</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/staff-labs.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/labs">LabSpot</a>
+    <nav id="nav" class="nav" aria-label="Main"></nav>
+    <button id="sign-out" class="secondary" type="button">Sign out</button>
+  </header>
+  <main>
+    <h1>Manage labs</h1>
+    <div id="staff-notice" class="message" role="status" hidden></div>
+
+    <div class="forms">
+      <form id="add-lab" class="card">
+        <h2>Add a lab</h2>
+        <label for="lab-name">Name</label>
+        <input id="lab-name" name="name" required maxlength="100">
+        <label for="lab-room">Room</label>
+        <input id="lab-room" name="room" required maxlength="20">
+        <button type="submit">Add lab</button>
+      </form>
+
+      <form id="add-workstation" class="card">
+        <h2>Add a workstation</h2>
+        <label for="ws-lab">Lab</label>
+        <select id="ws-lab" name="labId" required></select>
+        <label for="ws-label">Label</label>
+        <input id="ws-label" name="label" required maxlength="20" placeholder="e.g. NL-05">
+        <fieldset class="features">
+          <legend>Features</legend>
+          <label><input type="checkbox" name="features" value="quiet"> Quiet</label>
+          <label><input type="checkbox" name="features" value="dual-monitor"> Dual monitor</label>
+          <label><input type="checkbox" name="features" value="gpu"> GPU</label>
+        </fieldset>
+        <button type="submit">Add workstation</button>
+      </form>
+    </div>
+
+    <h2 class="section-title">Labs and workstations</h2>
+    <p id="staff-status" class="muted" role="status">Loading labs…</p>
+    <div id="staff-error" class="message error" role="alert" hidden>
+      <p id="staff-error-text"></p>
+      <button id="staff-retry" class="secondary" type="button">Try again</button>
+    </div>
+    <div id="staff-labs" hidden></div>
+  </main>
+</body>
+</html>
