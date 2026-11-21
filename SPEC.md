@@ -137,29 +137,44 @@ Lab booking.
 <!-- Filled in from Exercise 3 onward: each AC id, and the test that names it. -->
 | Criterion | Test |
 | --- | --- |
-| AC-1 |  |
-| AC-2 |  |
-| AC-3 |  |
-| AC-4 |  |
-| AC-5 |  |
-| AC-6 |  |
-| AC-7 |  |
-| AC-8 |  |
-| AC-9 |  |
-| AC-16 |  |
-| AC-23 |  |
-| AC-24 |  |
-| AC-25 |  |
-| AC-26 |  |
-| AC-27 |  |
-| AC-31 |  |
-| AC-32 |  |
-| AC-33 |  |
-| AC-34 |  |
-| AC-35 |  |
-| AC-36 |  |
-| AC-37 |  |
-| AC-38 |  |
+| AC-1 | `test/bookings.service.test.js` "AC-1 the day view lists every active workstation with its features and six blocks marked free, taken, yours or past"<br>`test/bookings.service.test.js` "AC-1 the day view refuses a weekend, a past day, a day too far ahead and a malformed date"<br>`test/bookings.test.js` "AC-1 the day view for a weekday shows each active workstation with its features and six blocks"<br>`test/bookings.test.js` "AC-1 a weekend or a missing date gets 400 with a reason" |
+| AC-2 | `test/bookings.service.test.js` "AC-2 booking a free upcoming block adds exactly one active row for that workstation, date and block"<br>`test/bookings.test.js` "AC-2 a student who books a free block gets 201, sees it in their bookings, and one active row appears" |
+| AC-3 | `test/bookings.service.test.js` "AC-3 when two students book the same block at the same moment, one gets it and the other is told it was just booked"<br>`test/bookings.service.test.js` "AC-3 a clash on the workstation index during the insert is reported as "just booked", not as a server error"<br>`test/bookings.service.test.js` "AC-3 a block someone else already holds is refused with the same message"<br>`test/bookings.test.js` "AC-3 two students booking the same block at the same moment: one 201, one 409 "just booked", one row" |
+| AC-4 | `test/bookings.service.test.js` "AC-4 a student with 3 upcoming active bookings cannot make a fourth, and no row is added"<br>`test/bookings.service.test.js` "AC-4 cancelled bookings and blocks that have started do not count towards the limit"<br>`test/bookings.test.js` "AC-4 a fourth upcoming booking gets 409 with the limit message and adds no row" |
+| AC-5 | `test/bookings.service.test.js` "AC-5 a clash on the student index during the insert is reported as "already have a booking at this time""<br>`test/bookings.service.test.js` "AC-5 a student who already has a booking in a block cannot book another workstation in it"<br>`test/bookings.test.js` "AC-5 a second workstation in a block the student already holds gets 409" |
+| AC-6 | `test/bookings.service.test.js` "AC-6 a block that has started, a weekend and a date more than 14 days ahead are refused with a readable reason"<br>`test/bookings.test.js` "AC-6 a started block, a weekend or a date more than 14 days ahead gets 400 with a reason and no row" |
+| AC-7 | `test/bookings.service.test.js` "AC-7 cancelling your own upcoming booking marks it cancelled, records who did it, and frees the block"<br>`test/bookings.service.test.js` "AC-7 my bookings lists only my upcoming active bookings, soonest first"<br>`test/bookings.test.js` "AC-7 cancelling your own booking gets 204; it leaves your bookings, the row is cancelled and the block is Free again" |
+| AC-8 | `test/bookings.service.test.js` "AC-8 a booking whose block has started cannot be cancelled" |
+| AC-9 | `test/authorization.test.js` "AC-9 a student who cancels another student's booking gets 403, and the row stays active"<br>`test/bookings.service.test.js` "AC-9 a student cannot cancel another student's booking, and the row stays active" |
+| AC-10 | `test/staff.service.test.js` "AC-10 a student cannot add a lab, and no row is added"<br>`test/staff.test.js` "AC-10 a student who opens /staff/labs or calls POST /api/labs gets 403, and no row is added to labs" |
+| AC-11 | `test/staff.service.test.js` "AC-11 a staff member who adds a lab sees it in the labs list, and a new row appears"<br>`test/staff.service.test.js` "AC-11 a lab needs a name and a room"<br>`test/staff.test.js` "AC-11 a staff member who adds a lab gets 201, the lab shows in /api/labs, and a new row appears" |
+| AC-12 | `test/staff.service.test.js` "AC-12 a staff member who adds a workstation with quiet and dual-monitor sees those features in the day view"<br>`test/staff.service.test.js` "AC-12 a feature outside the fixed list is refused, and no row is added"<br>`test/staff.service.test.js` "AC-12 a workstation needs a whole-number lab id of a lab that exists, and a label unique in its lab"<br>`test/staff.service.test.js` "AC-12 staff can change the features of a workstation"<br>`test/staff.test.js` "AC-12 a staff member who adds a workstation with quiet and dual-monitor sees them in the day view"<br>`test/staff.test.js` "AC-12 a feature outside the fixed list gets 400 and adds no row" |
+| AC-13 | `test/staff.service.test.js` "AC-13 a workstation with no upcoming bookings taken out of service is no longer offered in the day view"<br>`test/staff.service.test.js` "AC-13 a workstation with upcoming bookings is refused with "Cancel its N upcoming bookings first." and stays in service"<br>`test/staff.service.test.js` "AC-13 updating needs staff, a workstation that exists, and something to change"<br>`test/staff.test.js` "AC-13 a workstation with no upcoming bookings taken out of service is no longer offered in the day view"<br>`test/staff.test.js` "AC-13 a workstation with upcoming bookings is refused with 409 "Cancel its N upcoming bookings first." and stays in service" |
+| AC-14 | `test/staff.service.test.js` "AC-14 a staff member sees every active booking for a day with the student's email"<br>`test/staff.test.js` "AC-14 a staff member who opens all bookings for a day sees every active booking with the student's email" |
+| AC-15 | `test/staff.service.test.js` "AC-15 a student cannot see all bookings"<br>`test/staff.test.js` "AC-15 a student who calls GET /api/admin/bookings gets 403 and no booking data" |
+| AC-16 | `test/authorization.test.js` "AC-16 a staff member who calls POST /api/bookings gets 403 "Staff accounts cannot book workstations." and no row"<br>`test/bookings.service.test.js` "AC-16 a staff account cannot book a workstation" |
+| AC-17 | `test/suggest.service.test.js` "AC-17 a free slot from the model is shown with a reason and a way to book it, and nothing is booked yet"<br>`test/suggest.service.test.js` "AC-17 the model gets the request, today and the free slots, and nothing that identifies the student"<br>`test/suggest.service.test.js` "AC-17 a workstation with no features is offered by its label and lab alone"<br>`test/suggest.test.js` "AC-17 a student gets a suggestion with a reason; nothing is booked until they press Book" |
+| AC-18 | `test/suggest.service.test.js` "AC-18 … shows the fallback message, books nothing, and records "…""<br>`test/suggest.service.test.js` "AC-18 a slot that was booked while the model was thinking is not suggested"<br>`test/suggest.service.test.js` "AC-18 with no key there is no client: the fallback is shown and nothing is recorded, as the model was never called"<br>`test/suggest.test.js` "AC-18 with no model key the student gets the fallback message and the day view still works" |
+| AC-19 | `test/google.service.test.js` "AC-19 a password account that signs in with Google (same verified email) stays one account with the same bookings; the old password stops working"<br>`test/google.service.test.js` "AC-19 a returning Google user is found by their Google id, even after changing their email at Google"<br>`test/google.test.js` "AC-19 a password account that signs in with Google lands on the same account and bookings; one users row, one Google identity, and the old password no longer works" |
+| AC-20 | `test/google.service.test.js` "AC-20 a person signed in through Google sets a new password, and then signs in with email and password to the same account"<br>`test/google.service.test.js` "AC-20 a password shorter than 10 characters is refused, and changing an existing password needs the current one"<br>`test/google.test.js` "AC-20 after Google, a new password set at /account signs in to the same account with the same bookings" |
+| AC-21 | `test/google.service.test.js` "AC-21 a Google sign-in whose email Google has not verified is not linked to an existing account, and is refused"<br>`test/google.test.js` "AC-21 a Google email that Google has not verified is not linked: back to /login with a readable refusal, no session, no identity row" |
+| AC-22 | `test/mcp.test.js` "AC-22 cancel_booking with a student's token and another student's booking id is refused like the HTTP route, and the row stays active" |
+| AC-28 | `test/staff.service.test.js` "AC-28 a staff member who cancels a student's booking records the staff id, and the student sees it marked"<br>`test/staff.test.js` "AC-28 a staff member who cancels a student's booking gets 204; cancelled_by is the staff id and the student sees it marked" |
+| AC-29 | `test/suggest.service.test.js` "AC-29 a student with 10 requests today gets the limit message, the model is not called and no row is added"<br>`test/suggest.service.test.js` "AC-29 the tenth request of the day is still answered"<br>`test/suggest.test.js` "AC-29 the eleventh request of the day gets the limit message" |
+| AC-30 | `test/mcp.test.js` "AC-30 cancel_booking with a staff token and a student's upcoming booking cancels it, with the staff id in cancelled_by" |
+| AC-23 | `test/labs.service.test.js` "AC-23 listLabs refuses a caller with no user with NotSignedIn"<br>`test/labs.test.js` "AC-23 without a session, /labs lands on /login and /api/labs is 401 with no lab names" |
+| AC-24 | `test/labs.service.test.js` "AC-24 listLabs counts only workstations that are in service"<br>`test/labs.test.js` "AC-24 a signed-in student sees the three seeded labs with room and active workstations, one of them 0" |
+| AC-25 | `test/labs.test.js` "AC-25 deleting the lab with no workstations from the database removes it from the list" |
+| AC-26 | `test/auth.service.test.js` "AC-26 signIn refuses a wrong password with WrongCredentials"<br>`test/auth.service.test.js` "AC-26 signIn refuses an unknown email exactly like a wrong password"<br>`test/auth.service.test.js` "AC-26 an account with no password (Google only) cannot sign in with one"<br>`test/auth.test.js` "AC-26 a wrong password gets 401, "Wrong email or password." and no session cookie"<br>`test/auth.test.js` "AC-26 every stored password is a bcrypt hash starting with $2" |
+| AC-27 | `test/auth.service.test.js` "AC-27 signOut ends the session: the token signs nobody in afterwards"<br>`test/auth.test.js` "AC-27 after Sign out, opening /labs lands on /login again" |
+| AC-31 | `test/auth.service.test.js` "AC-31 signIn refuses an empty email or an empty password with InvalidInput"<br>`test/auth.test.js` "AC-31 an empty email or password gets 400, "Enter your email and password." and no cookie" |
+| AC-32 | `test/authorization.test.js` "AC-32 POST /api/bookings without a session gets 401, and no row is added"<br>`test/bookings.service.test.js` "AC-32 a caller with no user cannot book" |
+| AC-33 | `test/bookings.service.test.js` "AC-33 a workstation that is out of service cannot be booked"<br>`test/bookings.test.js` "AC-33 a workstation that is out of service gets 409 and no row" |
+| AC-34 | `test/bookings.service.test.js` "AC-34 a well-formed slot on a workstation that does not exist is NotFound, and no row is added"<br>`test/bookings.test.js` "AC-34 a workstation id that does not exist gets 404 "That slot does not exist." and no row" |
+| AC-35 | `test/bookings.service.test.js` "AC-35 cancelling a booking that is already cancelled is refused, and the row does not change"<br>`test/bookings.service.test.js` "AC-35 a booking cancelled by a parallel request between the check and the update is reported as already cancelled"<br>`test/bookings.test.js` "AC-35 cancelling a booking that is already cancelled gets 409" |
+| AC-36 | `test/bookings.service.test.js` "AC-36 a missing or malformed field is refused with a sentence naming the field"<br>`test/bookings.test.js` "AC-36 a missing or malformed field gets 400 with a sentence naming the field, and no row" |
+| AC-37 | `test/authorization.test.js` "AC-37 DELETE /api/bookings/:id without a session gets 401, and the row does not change"<br>`test/bookings.service.test.js` "AC-37 a caller with no user cannot cancel" |
+| AC-38 | `test/bookings.service.test.js` "AC-38 a booking id that does not exist is NotFound"<br>`test/bookings.test.js` "AC-38 a booking id that does not exist gets 404" |
 
 ## Spec vs result
 <!-- After the agent builds the slice: which criteria passed, which it missed or reinterpreted, and what you changed in this spec because of it. -->
