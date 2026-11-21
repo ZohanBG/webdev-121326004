@@ -65,6 +65,10 @@ that talks to the database directly is a second, unguarded way into your data: n
 - adding, renaming or removing an MCP tool
 - changing a coverage threshold
 - sending user data to a third-party model
+- calling the real Claude API (tests always use the fake client)
+- running a migration against any database that isn't the local Docker one
+- changing or deleting an existing migration file
+- changing the test or coverage scripts in package.json
 
 ## Never
 - commit secrets, passwords, API keys or an OAuth client secret

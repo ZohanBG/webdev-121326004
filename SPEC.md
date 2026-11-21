@@ -32,10 +32,11 @@ Lab booking.
 - Passwords are stored only as a bcrypt hash, never as readable text. Sessions are server-side and the database stores only a hash of the session id, never the cookie value itself; the cookie is `HttpOnly`, `SameSite=Lax`, and `Secure` in production.
 - No secret is ever in a file in the repo: keys go in Codespaces secrets and the hosting settings; `.env.example` holds names only. Seed account passwords come from `SEED_PASSWORD`.
 - Time blocks are fixed: Monday to Friday, 08:00–20:00, six 2-hour blocks, in Europe/Sofia time; times are stored as UTC. Deliberate decision: six fixed blocks keep the day view readable at 380 px and make "one booking per block" a simple unique index, instead of overlap checks on free-form times.
+- A slot is one workstation in one block on one date. The REST API sends it as `{ "workstationId": 7, "date": "2026-11-19", "block": 3 }`, with blocks numbered 1–6 (1 = 08:00–10:00 … 6 = 18:00–20:00). The MCP tools and the model use the same slot as one string id, `<workstationId>:<date>:<block>` (e.g. `7:2026-11-19:3`), which the service parses into those three fields before applying the same rules.
 - A block is "upcoming" until its start time. Once a block has started it can no longer be booked or cancelled.
 - A student cancels only their own bookings. Staff can cancel any upcoming booking (e.g. a broken workstation); every cancelled row records who cancelled it in `cancelled_by`.
 - A student holds at most 3 upcoming active bookings and at most one booking per time block. Bookings are possible for upcoming blocks up to 14 days ahead.
-- "One workstation, one block, one active booking" is enforced by a unique index in the database, not only by a check in code.
+- "One workstation, one block, one active booking" and "one student, one block, one active booking" are each enforced by a unique index on active bookings in the database, not only by a check in code. The 3-booking limit is checked inside a transaction that locks the student's row, so two parallel requests cannot both pass it.
 - Workstation features come from a fixed list: `quiet`, `dual-monitor`, `gpu`. Staff set them when adding or editing a workstation; any other value is refused.
 
 ## The model feature
@@ -86,7 +87,7 @@ Lab booking.
 <!-- Every criterion carries an id. A test proves it by naming that id in its title, for example
      test('AC-3 a booking that overlaps another is refused with 409', ...).
      Say who acts, what they see, and what must be true in the database. -->
-- [AC-1] A signed-in student who opens `/day?date=` for a weekday within the next 14 days sees every active workstation with its features and its six blocks, each marked Free or Taken, matching the `bookings` table.
+- [AC-1] A signed-in student who opens `/day?date=` for a weekday within the next 14 days sees every active workstation with its features and its six blocks, each marked Free, Taken, Yours (their own active booking) or Past (start time has passed), matching the `bookings` table; only Free blocks have a Book button.
 - [AC-2] A student who presses Book on a free upcoming block sees it in `/my-bookings`, and exactly one new row with status `active` appears in `bookings` for that workstation, date and block.
 - [AC-3] When two students send a booking for the same block at the same moment, one gets 201 and the other gets 409 with "This workstation was just booked. Pick another slot."; `bookings` holds exactly one active row for that block. (Proved by a test with two parallel requests, not by hand.)
 - [AC-4] A student with 3 upcoming active bookings who tries a fourth gets 409 and the message "You already have 3 upcoming bookings. Cancel one first."; no row is added.
@@ -122,14 +123,46 @@ Lab booking.
 - [AC-27] After pressing Sign out, opening `/labs` lands on `/login` again.
 - [AC-31] Signing in with an empty email or an empty password gets 400 and "Enter your email and password.", and sets no session cookie.
 
+### Slice 2: book and cancel a workstation
+<!-- Delivers the project criteria AC-1 to AC-9 and AC-16 above (the day view with its Book buttons, booking, cancelling, and the staff booking refusal), plus these refusals. Staff cancelling (AC-28) and the staff screens come in a later slice. -->
+- [AC-32] A visitor without a session who sends `POST /api/bookings` gets 401 and no row is added to `bookings`.
+- [AC-33] A student who books a slot on a workstation that is out of service gets 409 and "This workstation is out of service."; no row is added.
+- [AC-34] A student who books a well-formed slot whose `workstationId` does not exist gets 404 and "That slot does not exist."; no row is added.
+- [AC-35] A student who cancels a booking that is already cancelled gets 409 and "This booking is already cancelled."; the row and its `cancelled_by` do not change.
+- [AC-36] A booking request with a missing or malformed field (no `date`, a date that is not a real YYYY-MM-DD date, a `block` outside 1–6 or not a number, a `workstationId` that is not a number) gets 400 with a sentence naming the field, e.g. "block must be a number from 1 to 6."; no row is added.
+- [AC-37] A visitor without a session who sends `DELETE /api/bookings/:id` gets 401 and the row does not change.
+- [AC-38] A student who cancels a booking id that does not exist gets 404 and "That booking does not exist."; no row changes.
+
 ## Traceability
 <!-- Filled in from Exercise 3 onward: each AC id, and the test that names it. -->
 | Criterion | Test |
 | --- | --- |
 | AC-1 |  |
+| AC-2 |  |
+| AC-3 |  |
+| AC-4 |  |
+| AC-5 |  |
+| AC-6 |  |
+| AC-7 |  |
+| AC-8 |  |
+| AC-9 |  |
+| AC-16 |  |
+| AC-23 |  |
+| AC-24 |  |
+| AC-25 |  |
+| AC-26 |  |
+| AC-27 |  |
+| AC-31 |  |
+| AC-32 |  |
+| AC-33 |  |
+| AC-34 |  |
+| AC-35 |  |
+| AC-36 |  |
+| AC-37 |  |
+| AC-38 |  |
 
 ## Spec vs result
 <!-- After the agent builds the slice: which criteria passed, which it missed or reinterpreted, and what you changed in this spec because of it. -->
-- Passed: not checked yet. Slice 1 is in progress (migration and seed done, sign-in written but untested, labs list not built). AC-23 to AC-27 get checked one by one when the slice is finished, and this line is updated then.
+- Passed: all of slice 1, checked on the running app with the real database, not only in tests. AC-23: `/labs` without a session redirects to `/login`, `/api/labs` gives 401 "Sign in first." with no lab names. AC-24: three labs with their rooms and active counts 2, 3 and 0; the out-of-service workstation is not counted. AC-25: deleting the empty lab removes it from the list. AC-26: wrong password gives 401, no cookie, every hash starts with `$2b$`. AC-27: sign out ends the session row and `/labs` redirects to `/login`. AC-31: an empty field gives 400 and no cookie.
 - Reinterpreted: AC-26 did not say which status a wrong password gets; the agent chose 401. The spec did not say what a sign-in with an empty field gets; the agent chose 400. The session was stored as a hash of the cookie value, which the spec did not mention. Sign-up is on the `/login` screen in UI but is not in slice 1, so the agent left it out.
 - Changed: AC-26 now names 401, the new AC-31 covers the empty field with 400, Constraints now say the session id is stored only as a hash, and the slice 1 heading says sign-up is not part of it.
