@@ -23,6 +23,14 @@
     </form>
     <p id="day-heading" class="muted"></p>
 
+    <form id="suggest" class="card suggest" hidden>
+      <label for="suggest-text">Describe what you need</label>
+      <textarea id="suggest-text" name="text" rows="2" maxlength="300" required
+        placeholder="e.g. quiet place with two monitors, Thursday afternoon"></textarea>
+      <button id="suggest-button" type="submit">Suggest a slot</button>
+      <div id="suggest-result" class="suggestion" role="status" hidden></div>
+    </form>
+
     <div id="day-notice" class="message" role="status" hidden></div>
     <p id="day-status" class="muted" role="status">Loading the day…</p>
     <div id="day-error" class="message error" role="alert" hidden>

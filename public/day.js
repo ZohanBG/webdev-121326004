@@ -15,6 +15,9 @@ const content = document.querySelector('#day-content');
 const STATE_LABEL = { free: 'Free', taken: 'Taken', yours: 'Yours', past: 'Past' };
 const FEATURE_LABEL = { quiet: 'Quiet', 'dual-monitor': 'Dual monitor', gpu: 'GPU' };
 let user = null;
+const suggestForm = document.querySelector('#suggest');
+const suggestButton = document.querySelector('#suggest-button');
+const suggestResult = document.querySelector('#suggest-result');
 
 const isWeekend = (d) => d.getDay() === 0 || d.getDay() === 6;
 function weekdayFrom(date, step) {
@@ -118,6 +121,46 @@ async function book(ws, block, button) {
   await load();
 }
 
+/** A suggestion is labelled as one, with the model's reason, and is booked only when the student presses Book. */
+function showSuggestion(s) {
+  const title = el('p', 'suggestion-label', 'Suggestion');
+  const what = el('p', 'suggestion-what', `${s.workstation}, ${s.lab} · ${longDate(s.date)}, ${s.start}–${s.end}`);
+  const why = el('p', 'muted', `Why: ${s.reason}`);
+  const book = el('button', '', 'Book this slot');
+  book.type = 'button';
+  book.addEventListener('click', async () => {
+    book.disabled = true;
+    book.textContent = 'Booking…';
+    const result = await api('/api/bookings', { method: 'POST', body: { workstationId: s.workstationId, date: s.date, block: s.block } });
+    suggestResult.hidden = true;
+    if (result.ok) showNotice(`Booked ${s.workstation} on ${longDate(s.date)}, ${s.start}–${s.end}.`, 'success');
+    else showNotice(result.error, 'error');
+    if (dateInput.value === s.date) await load();
+    else go(s.date);
+  });
+  suggestResult.replaceChildren(title, what, why, book);
+  suggestResult.className = 'suggestion';
+  suggestResult.hidden = false;
+}
+
+suggestForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  suggestButton.disabled = true;
+  suggestButton.textContent = 'Finding a slot…';
+  suggestResult.hidden = true;
+  const result = await api('/api/suggestions', { method: 'POST', body: { text: suggestForm.text.value } });
+  suggestButton.disabled = false;
+  suggestButton.textContent = 'Suggest a slot';
+  if (result.ok && result.data.suggestion) {
+    showSuggestion(result.data.suggestion);
+  } else {
+    // the fallback, the daily limit, or a request the server refused: the day view below still works
+    suggestResult.replaceChildren(el('p', '', result.ok ? result.data.message : result.error));
+    suggestResult.className = 'suggestion suggestion-off';
+    suggestResult.hidden = false;
+  }
+});
+
 function go(date) {
   dateInput.value = date;
   history.replaceState(null, '', `/day?date=${date}`);
@@ -132,5 +175,6 @@ document.querySelector('#day-picker').addEventListener('submit', (e) => e.preven
 document.querySelector('#day-retry').addEventListener('click', load);
 
 user = await renderNav();
+suggestForm.hidden = user?.role === 'staff';
 dateInput.value = new URLSearchParams(location.search).get('date') || firstOpenDay();
 load();

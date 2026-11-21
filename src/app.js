@@ -7,19 +7,22 @@ import bookingRoutes from './routes/bookings.js';
 import slotRoutes from './routes/slots.js';
 import workstationRoutes from './routes/workstations.js';
 import adminRoutes from './routes/admin.js';
+import suggestionRoutes from './routes/suggestions.js';
 import pageRoutes from './routes/pages.js';
 import { notFound, errorHandler } from './routes/errors.js';
 
 /**
  * The whole app, with its outside world passed in: the database (a pg Pool in production,
- * PGlite in tests) and the clock (the real time in production, a fixed one in tests).
+ * PGlite in tests), the clock (the real time in production, a fixed one in tests) and the model
+ * client (the real one when there is a key, a fake in tests, null for "suggestions off").
  */
-export function createApp({ db, secureCookies = false, now = () => new Date() }) {
+export function createApp({ db, secureCookies = false, now = () => new Date(), model = null }) {
   const app = express();
   app.disable('x-powered-by');
   app.locals.db = db;
   app.locals.secureCookies = secureCookies;
   app.locals.now = now;
+  app.locals.model = model;
 
   app.use(express.json({ limit: '10kb' }));
   app.use(loadUser);
@@ -31,6 +34,7 @@ export function createApp({ db, secureCookies = false, now = () => new Date() })
   app.use('/api/slots', requireSignIn, slotRoutes);
   app.use('/api/workstations', requireSignIn, workstationRoutes);
   app.use('/api/admin', requireSignIn, adminRoutes);
+  app.use('/api/suggestions', requireSignIn, suggestionRoutes);
   app.use('/api', notFound);
 
   app.use(pageRoutes);

@@ -239,3 +239,33 @@ select {
 }
 .badge-off { background: var(--color-error-bg); color: var(--color-error); }
 .booking-cancelled { background: var(--color-bg); }
+
+/* ---- suggestions ---- */
+
+.suggest { margin: var(--space-4) 0; }
+textarea {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  margin-bottom: var(--space-3);
+  resize: vertical;
+}
+.suggestion {
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px dashed var(--color-primary);
+  border-radius: var(--radius);
+  background: var(--color-yours-bg);
+}
+.suggestion p { margin: 0 0 var(--space-2); }
+.suggestion-label {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-primary-hover);
+}
+.suggestion-what { font-weight: 700; }
+.suggestion-off { border-style: solid; border-color: var(--color-border); background: var(--color-bg); }
