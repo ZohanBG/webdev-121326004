@@ -11,16 +11,18 @@ import suggestionRoutes from './routes/suggestions.js';
 import googleRoutes from './routes/google.js';
 import accountRoutes from './routes/account.js';
 import featureRoutes from './routes/features.js';
+import healthRoutes from './routes/health.js';
 import pageRoutes from './routes/pages.js';
-import { notFound, errorHandler } from './routes/errors.js';
+import { notFound, notFoundPage, errorHandler } from './routes/errors.js';
 
 /**
  * The whole app, with its outside world passed in: the database (a pg Pool in production,
  * PGlite in tests), the clock (the real time in production, a fixed one in tests) and the model
  * client (the real one when there is a key, a fake in tests, null for "suggestions off") and the
- * Google client (null when Sign in with Google is not set up).
+ * Google client (null when Sign in with Google is not set up). `healthTimeoutMs` shortens the health
+ * check's wait in tests.
  */
-export function createApp({ db, secureCookies = false, now = () => new Date(), model = null, google = null }) {
+export function createApp({ db, secureCookies = false, now = () => new Date(), model = null, google = null, healthTimeoutMs }) {
   const app = express();
   app.disable('x-powered-by');
   app.locals.db = db;
@@ -28,7 +30,10 @@ export function createApp({ db, secureCookies = false, now = () => new Date(), m
   app.locals.now = now;
   app.locals.model = model;
   app.locals.google = google;
+  app.locals.healthTimeoutMs = healthTimeoutMs;
 
+  // public and before the session: answers even when no one is signed in (AC-42)
+  app.use('/health', healthRoutes);
   app.use(express.json({ limit: '10kb' }));
   app.use(loadUser);
 
@@ -47,6 +52,7 @@ export function createApp({ db, secureCookies = false, now = () => new Date(), m
 
   app.use(pageRoutes);
   app.use(express.static(join(import.meta.dirname, '..', 'public'), { index: false }));
+  app.use(notFoundPage);
 
   app.use(errorHandler);
   return app;

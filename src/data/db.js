@@ -3,9 +3,22 @@
 // Both answer `db.query(text, params)` with `{ rows }`.
 import pg from 'pg';
 
+/** How long a new connection may take before the query fails, so a database that does not answer never hangs a request. */
+export const CONNECT_TIMEOUT_MS = 5000;
+
 export function createPool(url = process.env.DATABASE_URL) {
   if (!url) throw new Error('DATABASE_URL is not set. Copy .env.example to .env and fill it in.');
-  return new pg.Pool({ connectionString: url });
+  const pool = new pg.Pool({ connectionString: url, connectionTimeoutMillis: CONNECT_TIMEOUT_MS });
+  // An idle connection the database closes (Neon does when its compute pauses) emits 'error' on the pool;
+  // without a listener that would crash the app. The pool replaces the connection on the next query.
+  // Logged by code only: a message can contain the host.
+  pool.on('error', (error) => console.error(`database: idle connection lost (${error.code ?? error.name})`));
+  return pool;
+}
+
+/** The cheapest query there is: answers when the database does. Used by GET /health. */
+export async function ping(db) {
+  await db.query('SELECT 1');
 }
 
 /**
