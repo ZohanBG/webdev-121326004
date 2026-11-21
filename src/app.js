@@ -24,8 +24,9 @@ export function createApp({ db, secureCookies = false, now = () => new Date() })
 
   app.use('/api/auth', authRoutes);
   app.use('/api/labs', requireSignIn, labRoutes);
-  app.use('/api/bookings', bookingRoutes);
-  app.use('/api/slots', slotRoutes);
+  // who you are is settled here, before any service runs (401); what you may do is the service's call (403)
+  app.use('/api/bookings', requireSignIn, bookingRoutes);
+  app.use('/api/slots', requireSignIn, slotRoutes);
   app.use('/api', notFound);
 
   app.use(pageRoutes);
