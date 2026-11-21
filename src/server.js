@@ -15,10 +15,22 @@ const google = createGoogleClient({
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
   redirectUri: base && `${base}/api/auth/google/callback`,
 });
-const app = createApp({ db: createPool(), secureCookies: process.env.NODE_ENV === 'production', model, google });
+const pool = createPool();
+const app = createApp({ db: pool, secureCookies: process.env.NODE_ENV === 'production', model, google });
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`LabSpot listening on http://localhost:${port}`);
   console.log(model ? `Suggestions: on (${model.model})` : 'Suggestions: off (no model key), so the fallback is shown');
   console.log(google ? `Sign in with Google: on (${base}/api/auth/google/callback)` : 'Sign in with Google: off (no client id, secret or PUBLIC_BASE_URL)');
 });
+
+// In a container node runs as PID 1, which ignores SIGTERM and SIGINT unless they are handled: without this,
+// docker stop, Ctrl+C and every Render deploy would wait 10 seconds and then kill the process.
+function shutDown(signal) {
+  console.log(`${signal}: closing`);
+  server.close(() => pool.end().finally(() => process.exit(0)));
+  // a connection that does not close in time does not keep the old version running
+  setTimeout(() => process.exit(0), 5000).unref();
+}
+process.once('SIGTERM', shutDown);
+process.once('SIGINT', shutDown);

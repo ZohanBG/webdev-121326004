@@ -1,0 +1,27 @@
+# Never sent to the Docker build. The Dockerfile copies only src, public, scripts and migrations;
+# this list is the second guard, and it keeps the build context small.
+
+# secrets and local config
+.env
+.env.*
+!.env.example
+
+# rebuilt inside the image by npm ci
+node_modules
+
+# not needed to run the app
+.git
+.github
+.devcontainer
+.vscode
+.gemini
+test
+coverage
+checks
+docs
+mcp-server
+scripts/ui
+*.log
+*.md
+Dockerfile
+.dockerignore

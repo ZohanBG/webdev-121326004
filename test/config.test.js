@@ -141,6 +141,21 @@ describe('the server at start-up', () => {
     expect(stderr).not.toMatch(/user:password/);
   });
 
+  // Windows cannot send a signal to another process (kill() ends it at once), so this runs in CI on Linux
+  test.skipIf(process.platform === 'win32')('a SIGTERM closes the server cleanly: it says so and exits with code 0', async () => {
+    const port = await freePort();
+    const child = spawn(process.execPath, ['src/server.js'], { cwd: ROOT, env: { ...baseEnv(), DATABASE_URL: DB, PORT: String(port) } });
+    let stdout = '';
+    const exited = new Promise((resolve) => child.on('exit', (code) => resolve(code)));
+    await new Promise((resolve) => child.stdout.on('data', (chunk) => {
+      stdout += chunk;
+      if (/Sign in with Google: off/.test(stdout)) resolve();
+    }));
+    child.kill('SIGTERM');
+    expect(await exited).toBe(0);
+    expect(stdout).toMatch(/SIGTERM: closing/);
+  });
+
   test('without a Gemini key it still starts, with suggestions off', async () => {
     const port = await freePort();
     const { stdout, stderr } = await runServer({ DATABASE_URL: DB, PORT: String(port) }, /Sign in with Google: off/);
