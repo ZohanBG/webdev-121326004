@@ -128,6 +128,13 @@ export async function listMine(db, user, now = new Date()) {
 /** The string id of a slot that MCP tools and the model use: "<workstationId>:<date>:<block>". */
 export const slotIdOf = ({ workstationId, date, block }) => `${workstationId}:${date}:${block}`;
 
+/** "7:2026-11-24:3" back into { workstationId, date, block }; createBooking then checks every field as usual. */
+export function parseSlotId(slotId) {
+  const match = /^(\d+):(\d{4}-\d{2}-\d{2}):(\d)$/.exec(typeof slotId === 'string' ? slotId.trim() : '');
+  if (!match) throw new InvalidInput('slotId must look like 7:2026-11-24:3 (workstation id, date, block).');
+  return { workstationId: Number(match[1]), date: match[2], block: Number(match[3]) };
+}
+
 /**
  * Every slot the user could book right now, in the 14-day window or on one date: workstations in
  * service, blocks not started, not held by anyone, and not in a block where the user already has a booking.

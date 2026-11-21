@@ -4,8 +4,16 @@ const path = require('node:path');
 
 const lectures = JSON.parse(fs.readFileSync(path.join(__dirname, 'lectures.json'), 'utf8'));
 
-const SERVER_INFO = { name: 'lectures', version: '1.0.0' };
+const SERVER_INFO = { name: 'labspot', version: '1.1.0' };
 const PROTOCOL_VERSION = '2025-11-25';
+
+// LabSpot's own tools (Exercise 3), loaded on first use. They call the same services as the HTTP API,
+// and act as the person whose session token is in MCP_TOKEN.
+let project;
+const projectTools = async () => {
+  project ??= await import('./project-tools.mjs').then((m) => ({ definitions: m.definitions, tools: m.createProjectTools() }));
+  return project;
+};
 
 const tools = [
   {
@@ -63,7 +71,7 @@ const handlers = {
   },
 };
 
-function handle(msg) {
+async function handle(msg) {
   switch (msg.method) {
     case 'initialize':
       return ok(msg.id, {
@@ -76,13 +84,16 @@ function handle(msg) {
       return null;
 
     case 'tools/list':
-      return ok(msg.id, { tools });
+      return ok(msg.id, { tools: [...tools, ...(await projectTools()).definitions] });
 
     case 'tools/call': {
       const name = msg.params?.name;
       const handler = Object.hasOwn(handlers, name) ? handlers[name] : null;
-      if (!handler) return fail(msg.id, -32602, `Unknown tool: ${name}`);
-      return handler(msg.id, msg.params?.arguments ?? {});
+      if (handler) return handler(msg.id, msg.params?.arguments ?? {});
+      const { tools: labspot } = await projectTools();
+      if (!labspot.has(name)) return fail(msg.id, -32602, `Unknown tool: ${name}`);
+      const result = await labspot.call(name, msg.params?.arguments ?? {});
+      return text(msg.id, result.text, result.isError === true);
     }
 
     case 'ping':
@@ -99,23 +110,25 @@ function send(reply) {
 
 const lines = readline.createInterface({ input: process.stdin });
 
-lines.on('line', (line) => {
+lines.on('line', async (line) => {
   if (!line.trim()) return;
-  console.error('got: ' + line);
 
   let msg;
   try {
     msg = JSON.parse(line);
   } catch {
+    console.error('got: a line that is not JSON');
     return send(fail(null, -32700, 'Parse error'));
   }
 
   if (msg === null || typeof msg !== 'object' || Array.isArray(msg) || typeof msg.method !== 'string') {
     return send(fail(msg?.id ?? null, -32600, 'Invalid request'));
   }
+  // only the method and id: arguments can hold a student's own words, which never go into a log
+  console.error(`got: ${msg.method}${msg.id !== undefined ? ` (id ${msg.id})` : ''}`);
 
   try {
-    const reply = handle(msg);
+    const reply = await handle(msg);
     if (reply) send(reply);
   } catch (err) {
     console.error(err);

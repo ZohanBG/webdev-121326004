@@ -1,7 +1,7 @@
 // The booking rules, called directly on the service: no HTTP involved.
 // "Now" is fixed: Monday 2026-11-23, 09:30 in Sofia. Block 1 (08:00) has started, block 2 (10:00) has not.
 import { describe, test, expect, beforeEach, afterEach } from 'vitest';
-import { createBooking, cancelBooking, listDay, listMine, listFreeSlots } from '../src/services/bookings.js';
+import { createBooking, cancelBooking, listDay, listMine, listFreeSlots, parseSlotId } from '../src/services/bookings.js';
 import { freshDb, userByEmail, workstationIds, STUDENT, STUDENT2, STAFF } from './helpers.js';
 
 const NOW = new Date('2026-11-23T07:30:00Z');
@@ -227,6 +227,15 @@ describe('cancelBooking', () => {
   test('AC-37 a caller with no user cannot cancel', async () => {
     const booking = await book(student, ws.NL01, TUE, 3);
     await expect(cancelBooking(db, null, booking.id, NOW)).rejects.toMatchObject({ name: 'NotSignedIn' });
+  });
+});
+
+describe('parseSlotId', () => {
+  test('reads "workstation:date:block" into the three fields that createBooking checks, and refuses anything else', () => {
+    expect(parseSlotId(' 7:2026-11-24:3 ')).toEqual({ workstationId: 7, date: '2026-11-24', block: 3 });
+    for (const bad of ['7-2026-11-24-3', '7:24.11.2026:3', 'x:2026-11-24:3', '7:2026-11-24:12', '', undefined, 7]) {
+      expect(() => parseSlotId(bad)).toThrow('slotId must look like 7:2026-11-24:3 (workstation id, date, block).');
+    }
   });
 });
 
