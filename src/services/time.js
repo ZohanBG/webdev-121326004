@@ -29,10 +29,10 @@ export function today(now) {
   return `${year}-${pad(month)}-${pad(day)}`;
 }
 
-/** The instant a block starts: its date and hour on Sofia's clock, whatever the offset that day (EET or EEST). */
-export function blockStart(date, block) {
+/** The instant Sofia's clock shows `hour`:00 on `date`, whatever the offset that day (EET or EEST). */
+function sofiaInstant(date, hour) {
   const [year, month, day] = date.split('-').map(Number);
-  const wanted = Date.UTC(year, month - 1, day, startHour(block));
+  const wanted = Date.UTC(year, month - 1, day, hour);
   const offset = (guess) => {
     const w = wallClock(new Date(guess));
     return Date.UTC(w.year, w.month - 1, w.day, w.hour, w.minute) - guess;
@@ -40,6 +40,12 @@ export function blockStart(date, block) {
   const first = wanted - offset(wanted);
   return new Date(wanted - offset(first));
 }
+
+/** The instant a block starts. */
+export const blockStart = (date, block) => sofiaInstant(date, startHour(block));
+
+/** Midnight in Sofia at the start of `now`'s day: where the daily suggestion limit restarts. */
+export const startOfToday = (now) => sofiaInstant(today(now), 0);
 
 export const hasStarted = (date, block, now) => blockStart(date, block) <= now;
 
@@ -64,3 +70,12 @@ export function addDays(date, days) {
 
 /** The last date that can be booked today. */
 export const lastBookableDate = (now) => addDays(today(now), BOOKING_WINDOW_DAYS);
+
+/** Every weekday from today to the last bookable date. */
+export function bookableDates(now) {
+  const dates = [];
+  for (let date = today(now); date <= lastBookableDate(now); date = addDays(date, 1)) {
+    if (isWeekday(date)) dates.push(date);
+  }
+  return dates;
+}

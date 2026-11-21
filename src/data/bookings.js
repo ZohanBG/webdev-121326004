@@ -80,6 +80,15 @@ export async function listActiveOnDateWithPeople(db, date) {
   return rows;
 }
 
+/** Every active booking between two dates, inclusive. */
+export async function listActiveBetween(db, fromDate, toDate) {
+  const { rows } = await db.query(
+    `SELECT ${COLUMNS} FROM bookings b WHERE b.date BETWEEN $1 AND $2 AND b.status = 'active'`,
+    [fromDate, toDate],
+  );
+  return rows;
+}
+
 /** Every active booking on one date: who holds which workstation in which block. */
 export async function listActiveOnDate(db, date) {
   const { rows } = await db.query(`SELECT ${COLUMNS} FROM bookings b WHERE b.date = $1 AND b.status = 'active'`, [date]);

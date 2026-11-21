@@ -1,7 +1,7 @@
 // The booking rules, called directly on the service: no HTTP involved.
 // "Now" is fixed: Monday 2026-11-23, 09:30 in Sofia. Block 1 (08:00) has started, block 2 (10:00) has not.
 import { describe, test, expect, beforeEach, afterEach } from 'vitest';
-import { createBooking, cancelBooking, listDay, listMine } from '../src/services/bookings.js';
+import { createBooking, cancelBooking, listDay, listMine, listFreeSlots } from '../src/services/bookings.js';
 import { freshDb, userByEmail, workstationIds, STUDENT, STUDENT2, STAFF } from './helpers.js';
 
 const NOW = new Date('2026-11-23T07:30:00Z');
@@ -227,6 +227,29 @@ describe('cancelBooking', () => {
   test('AC-37 a caller with no user cannot cancel', async () => {
     const booking = await book(student, ws.NL01, TUE, 3);
     await expect(cancelBooking(db, null, booking.id, NOW)).rejects.toMatchObject({ name: 'NotSignedIn' });
+  });
+});
+
+describe('listFreeSlots', () => {
+  test('lists the free upcoming slots of one date, and can narrow them to a lab and a feature', async () => {
+    await book(student2, ws.NL03, TUE, 2);
+    const all = await listFreeSlots(db, student, { date: TUE }, NOW);
+    expect(all).toHaveLength(6 * 5 - 1); // 5 workstations in service, one block taken
+    expect(all[0]).toEqual({
+      slotId: `${ws.GL01}:${TUE}:1`, workstationId: ws.GL01, date: TUE, block: 1, start: '08:00', end: '10:00',
+      workstation: 'GL-01', lab: 'GPU Lab', room: '1418', features: ['gpu'],
+    });
+    const quietNetworks = await listFreeSlots(db, student, { date: TUE, lab: 'networks', feature: 'quiet' }, NOW);
+    expect(new Set(quietNetworks.map((s) => s.workstation))).toEqual(new Set(['NL-01', 'NL-03']));
+    expect(quietNetworks.map((s) => s.slotId)).not.toContain(`${ws.NL03}:${TUE}:2`);
+  });
+
+  test('without a date it covers the 14-day window; a weekend date is refused', async () => {
+    const window = await listFreeSlots(db, student, {}, NOW);
+    expect(new Set(window.map((s) => s.date)).size).toBe(11); // today and ten more weekdays, up to 2026-12-07
+    expect(window.some((s) => s.date === MON && s.block === 1)).toBe(false); // started
+    await expect(listFreeSlots(db, student, { date: '2026-11-28' }, NOW)).rejects.toMatchObject({ name: 'InvalidInput' });
+    await expect(listFreeSlots(db, null, {}, NOW)).rejects.toMatchObject({ name: 'NotSignedIn' });
   });
 });
 

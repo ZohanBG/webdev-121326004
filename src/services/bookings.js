@@ -6,7 +6,7 @@ import * as workstations from '../data/workstations.js';
 import * as users from '../data/users.js';
 import { InvalidInput, Forbidden, NotFound, Conflict } from './errors.js';
 import { requireUser, requireStaff } from './access.js';
-import { BLOCKS, blockTimes, hasStarted, isRealDate, isWeekday, lastBookableDate, today } from './time.js';
+import { BLOCKS, blockTimes, bookableDates, hasStarted, isRealDate, isWeekday, lastBookableDate, today } from './time.js';
 
 const MAX_UPCOMING = 3;
 
@@ -123,6 +123,43 @@ export async function listMine(db, user, now = new Date()) {
     status: b.status,
     cancelledByStaff: b.status === 'cancelled',
   }));
+}
+
+/** The string id of a slot that MCP tools and the model use: "<workstationId>:<date>:<block>". */
+export const slotIdOf = ({ workstationId, date, block }) => `${workstationId}:${date}:${block}`;
+
+/**
+ * Every slot the user could book right now, in the 14-day window or on one date: workstations in
+ * service, blocks not started, not held by anyone, and not in a block where the user already has a booking.
+ */
+export async function listFreeSlots(db, user, { date, lab, feature } = {}, now = new Date()) {
+  requireUser(user);
+  if (date !== undefined) checkOpenDay(date, now);
+  const dates = date === undefined ? bookableDates(now) : [date];
+  const [stations, booked] = await Promise.all([
+    workstations.listActiveWithLabs(db),
+    bookings.listActiveBetween(db, dates[0], dates[dates.length - 1]),
+  ]);
+  const taken = new Set(booked.map(slotIdOf));
+  const mine = new Set(booked.filter((b) => b.userId === user.id).map((b) => `${b.date}:${b.block}`));
+  const wanted = stations.filter((ws) => (!lab || ws.labName.toLowerCase().includes(lab.toLowerCase()))
+    && (!feature || ws.features.includes(feature)));
+
+  const slots = [];
+  for (const day of dates) {
+    for (const block of BLOCKS) {
+      if (hasStarted(day, block, now) || mine.has(`${day}:${block}`)) continue;
+      for (const ws of wanted) {
+        const slot = { workstationId: ws.id, date: day, block };
+        if (taken.has(slotIdOf(slot))) continue;
+        slots.push({
+          slotId: slotIdOf(slot), ...slot, ...blockTimes(block),
+          workstation: ws.label, lab: ws.labName, room: ws.labRoom, features: ws.features,
+        });
+      }
+    }
+  }
+  return slots;
 }
 
 /** For staff: every active booking on a date, with the student's email, by lab and workstation. */
