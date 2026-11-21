@@ -22,6 +22,7 @@ router.get('/login', (req, res) => (req.user ? res.redirect('/labs') : res.sendF
 router.get('/labs', signedIn('labs.html'));
 router.get('/day', signedIn('day.html'));
 router.get('/my-bookings', signedIn('my-bookings.html'));
+router.get('/account', signedIn('account.html'));
 router.get('/staff/labs', staffOnly('staff-labs.html'));
 router.get('/staff/bookings', staffOnly('staff-bookings.html'));
 

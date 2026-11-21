@@ -2,8 +2,8 @@
 import { api, signOut } from './api.js';
 
 const LINKS = {
-  student: [['/labs', 'Labs'], ['/day', 'Day'], ['/my-bookings', 'My bookings']],
-  staff: [['/labs', 'Labs'], ['/day', 'Day'], ['/staff/labs', 'Manage labs'], ['/staff/bookings', 'All bookings']],
+  student: [['/labs', 'Labs'], ['/day', 'Day'], ['/my-bookings', 'My bookings'], ['/account', 'Account']],
+  staff: [['/labs', 'Labs'], ['/day', 'Day'], ['/staff/labs', 'Manage labs'], ['/staff/bookings', 'All bookings'], ['/account', 'Account']],
 };
 
 /** Fills <nav id="nav"> and returns the signed-in user, or sends a visitor to /login. */

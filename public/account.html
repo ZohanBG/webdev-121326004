@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Account · LabSpot</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/account.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/labs">LabSpot</a>
+    <nav id="nav" class="nav" aria-label="Main"></nav>
+    <button id="sign-out" class="secondary" type="button">Sign out</button>
+  </header>
+  <main>
+    <h1>Account</h1>
+    <p id="account-status" class="muted" role="status">Loading your account…</p>
+    <div id="account-error" class="message error" role="alert" hidden>
+      <p id="account-error-text"></p>
+      <button id="account-retry" class="secondary" type="button">Try again</button>
+    </div>
+    <div id="account" class="card narrow" hidden>
+      <p id="account-email" class="booking-when"></p>
+      <h2>Ways to sign in</h2>
+      <ul id="methods" class="methods"></ul>
+
+      <h2 id="password-title">Set a password</h2>
+      <div id="password-notice" class="message" role="status" hidden></div>
+      <form id="password-form" novalidate>
+        <div id="current-wrap" hidden>
+          <label for="current-password">Current password</label>
+          <input id="current-password" name="currentPassword" type="password" autocomplete="current-password">
+        </div>
+        <label for="new-password">New password (at least 10 characters)</label>
+        <input id="new-password" name="password" type="password" autocomplete="new-password" minlength="10" required>
+        <button type="submit">Save password</button>
+      </form>
+    </div>
+  </main>
+</body>
+</html>
