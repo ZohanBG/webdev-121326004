@@ -17,13 +17,13 @@ describe('migrations', () => {
   test('apply to an empty database, and a second run applies nothing', async () => {
     db = new PGlite();
     const first = await migrate(db);
-    expect(first).toEqual(['001_users_labs_sessions.sql', '002_bookings.sql', '003_suggestion_requests.sql', '004_identities.sql', '005_gemini_outcomes.sql', '006_feature_list.sql']);
+    expect(first).toEqual(['001_users_labs_sessions.sql', '002_bookings.sql', '003_suggestion_requests.sql', '004_identities.sql', '005_gemini_outcomes.sql', '006_feature_list.sql', '007_sign_in_failures.sql']);
     expect(await migrate(db)).toEqual([]);
 
     const { rows } = await db.query(
       "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name",
     );
-    expect(rows.map((r) => r.table_name)).toEqual(['bookings', 'identities', 'labs', 'oauth_attempts', 'schema_migrations', 'sessions', 'suggestion_requests', 'users', 'workstations']);
+    expect(rows.map((r) => r.table_name)).toEqual(['bookings', 'identities', 'labs', 'oauth_attempts', 'schema_migrations', 'sessions', 'sign_in_failures', 'suggestion_requests', 'users', 'workstations']);
   });
 
   test('a workstation feature outside the fixed list is refused by the database', async () => {
@@ -60,7 +60,7 @@ describe('the feature list', () => {
       const { rows: [lab] } = await db.query("INSERT INTO labs (name, room) VALUES ('Lab', '1') RETURNING id");
       await db.query("INSERT INTO workstations (lab_id, label, features) VALUES ($1, 'OLD-1', ARRAY['gpu', 'quiet'])", [lab.id]);
 
-      expect(await migrate(db, all)).toEqual(['006_feature_list.sql']);
+      expect(await migrate(db, all)).toEqual(['006_feature_list.sql', '007_sign_in_failures.sql']);
       const { rows } = await db.query("SELECT features FROM workstations WHERE label = 'OLD-1'");
       expect(rows[0].features).toEqual(['gpu-cuda', 'quiet']);
     } finally {
