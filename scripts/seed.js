@@ -4,6 +4,7 @@
 import { pathToFileURL } from 'node:url';
 import bcrypt from 'bcryptjs';
 import { createPool, transaction } from '../src/data/db.js';
+import { checkEnvOrExit } from '../src/config.js';
 
 export const USERS = [
   { email: 'student@labspot.test', role: 'student' },
@@ -65,6 +66,7 @@ export async function seed(db, { password }) {
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  checkEnvOrExit({ google: false });
   const pool = createPool();
   seed(pool, { password: process.env.SEED_PASSWORD })
     .then((r) => console.log(r.skipped

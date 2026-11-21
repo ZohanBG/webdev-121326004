@@ -1,7 +1,11 @@
+import { checkEnvOrExit } from './config.js';
 import { createPool } from './data/db.js';
 import { createApp } from './app.js';
 import { createModelClient } from './services/suggest.js';
 import { createGoogleClient } from './services/google.js';
+
+// First, before the pool, the app or listen: stop with one line per missing or wrong variable (names only).
+checkEnvOrExit();
 
 const port = Number(process.env.PORT) || 3000;
 const model = createModelClient();

@@ -5,6 +5,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createPool, transaction, withConnection } from '../src/data/db.js';
+import { checkEnvOrExit } from '../src/config.js';
 
 const MIGRATIONS = join(import.meta.dirname, '..', 'migrations');
 
@@ -33,6 +34,7 @@ export async function migrate(db, dir = MIGRATIONS) {
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  checkEnvOrExit({ google: false });
   const pool = createPool();
   migrate(pool)
     .then((applied) => console.log(applied.length ? `Applied: ${applied.join(', ')}` : 'Nothing to apply: the database is up to date.'))
