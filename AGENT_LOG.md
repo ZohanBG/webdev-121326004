@@ -247,6 +247,7 @@ Changed during review (Променено при прегледа): Plan D appro
     - Checked by the agent without my .env: `docker build -t labspot .` works (337 MB); `find /app -name ".env*"` in the image prints nothing; the user is node; the container with no environment stops with "missing DATABASE_URL: see .env.example" and exit code 1; with a dummy database address and `node src/server.js`, `docker stop` took 0.2 s, logged "SIGTERM: closing" and exited with 0 (without the handler Docker waits 10 s and kills it).
     - 218 tests pass, 1 skipped on Windows (the SIGTERM test).
   - Msg 12: Step 5 checked by hand in PowerShell: the build works; `find .env*` in the image prints nothing; `id -un` is node; the container runs migrate ("Nothing to apply") and listens; /health on port 3001 is 200 {"status":"ok","db":"ok"}; docker ps shows (healthy); docker stop logs "SIGTERM: closing" with exit code 0; an 11 kB body gives 413 "The request body is too large." I changed sslmode to verify-full in my .env to remove the pg warning. Committed step 5, not pushed. Next: step 6 (coverage gate in CI), plan first.
+  - Msg 13: step 6, plan only (Plan H below). Already there from Exercise 3: the `coverage` script (`vitest run --coverage`), the two gates in vitest.config.mjs (src/services 100% lines, functions, branches and statements; all of src 80% lines), and the CI coverage job, which runs `npm run coverage` when the script exists. The only gap: src/server.js is excluded from the overall count; with it included, all of src is 97.3% lines.
 
 ### Plan E: steps 1 and 2 (no code until approved)
 Step 1:
@@ -275,3 +276,8 @@ Changed during review (Променено при прегледа): /health reco
 - .dockerignore: `.env`, `.env.*` except `!.env.example`, node_modules, .git, .github, .devcontainer, .vscode, .gemini, test, coverage, checks, docs (with docs/ui screenshots), mcp-server, scripts/ui, *.log, *.md, Dockerfile, .dockerignore.
 - Proof that the image has no .env: `docker run --rm --entrypoint find labspot /app -name ".env*"` prints nothing (corrected in review: .env.example is not copied either); `docker run --rm --entrypoint id labspot -un` prints node.
 Changed during review (Променено при прегледа): Migrations run at container start (my explicit yes); shutdown handler added; the .env proof expects no file at all.
+
+### Plan H: step 6, coverage gate (no code until approved)
+- Remove the `exclude: ['src/server.js']` line from vitest.config.mjs, so 80% covers all of src literally (97.3% today). No threshold changes, no change to package.json.
+- Break it on purpose: in test/health.test.js, `test(` becomes `test.skip(` for "AC-42 the time limit is 5 seconds, and the log names only the error code, or its class when it has none", the only test of one branch in src/services/health.js. Run `npm run coverage` locally first to see the ERROR line (the gate under 100% for src/services); commit "Exercise 4: coverage gate, broken on purpose"; push (this also pushes the 4 commits of steps 1 to 5); CI: test job green, coverage job red with the same line.
+- Put it back: `test.skip(` becomes `test(`; commit "Exercise 4: coverage gate"; push; CI green.

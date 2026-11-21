@@ -10,7 +10,6 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**'],
-      exclude: ['src/server.js'],
       // the gate from AGENTS.md: every rule tested, glue code mostly tested
       thresholds: {
         lines: 80,
