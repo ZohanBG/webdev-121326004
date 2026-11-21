@@ -1,6 +1,6 @@
-// Development data: one student, one staff member, three labs (one with no workstations).
+// Development data: two students, one staff member, three labs (one with no workstations).
 //   npm run seed
-// Both accounts use SEED_PASSWORD from .env. Runs only on a database with no users yet.
+// All accounts use SEED_PASSWORD from .env. Runs only on a database with no users yet.
 import { pathToFileURL } from 'node:url';
 import bcrypt from 'bcryptjs';
 import { createPool, transaction } from '../src/data/db.js';
@@ -8,6 +8,8 @@ import { createPool, transaction } from '../src/data/db.js';
 export const USERS = [
   { email: 'student@labspot.test', role: 'student' },
   { email: 'staff@labspot.test', role: 'staff' },
+  // a second student, so "someone else's booking" can be tried by hand
+  { email: 'student2@labspot.test', role: 'student' },
 ];
 
 export const LABS = [

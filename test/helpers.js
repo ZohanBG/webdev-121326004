@@ -6,6 +6,7 @@ import { seed } from '../scripts/seed.js';
 
 export const PASSWORD = 'test-password-123';
 export const STUDENT = 'student@labspot.test';
+export const STUDENT2 = 'student2@labspot.test';
 export const STAFF = 'staff@labspot.test';
 
 export async function freshDb({ seeded = true } = {}) {
@@ -13,6 +14,18 @@ export async function freshDb({ seeded = true } = {}) {
   await migrate(db);
   if (seeded) await seed(db, { password: PASSWORD });
   return db;
+}
+
+/** The user as the session gives it to a service: { id, email, role }. */
+export async function userByEmail(db, email) {
+  const { rows } = await db.query('SELECT id, email, role FROM users WHERE email = $1', [email]);
+  return rows[0];
+}
+
+/** Seeded workstations by label, e.g. ws.NL01 is the id of NL-01. NL-04 is out of service. */
+export async function workstationIds(db) {
+  const { rows } = await db.query('SELECT id, label FROM workstations');
+  return Object.fromEntries(rows.map((r) => [r.label.replace('-', ''), r.id]));
 }
 
 export async function startApp(db) {

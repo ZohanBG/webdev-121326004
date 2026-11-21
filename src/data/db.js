@@ -27,6 +27,11 @@ export async function withConnection(db, fn) {
 
 /** Runs `fn` inside BEGIN/COMMIT, rolling back on any error. */
 export async function transaction(db, fn) {
+  if (typeof db.transaction === 'function') {
+    // PGlite has one connection: its own transaction() holds it, so concurrent calls wait their turn
+    // instead of running their statements inside this transaction.
+    return db.transaction((tx) => fn({ query: (text, params) => tx.query(text, params), exec: (text) => tx.exec(text) }));
+  }
   return withConnection(db, async (conn) => {
     await conn.exec('BEGIN');
     try {

@@ -47,4 +47,27 @@ describe('database helpers', () => {
     expect(rows[0].n).toBe(0);
     await db.close();
   });
+
+  test('transaction on a pg pool wraps the work in BEGIN and COMMIT, or ROLLBACK when it fails, on one client', async () => {
+    const statements = [];
+    const client = {
+      query: async (text) => {
+        statements.push(text);
+        return { rows: [] };
+      },
+      release: () => statements.push('release'),
+    };
+    const pool = { connect: async () => client };
+
+    await expect(transaction(pool, async (conn) => {
+      await conn.query('INSERT 1');
+      return 'done';
+    })).resolves.toBe('done');
+    await expect(transaction(pool, async (conn) => {
+      await conn.query('INSERT 2');
+      throw new Error('boom');
+    })).rejects.toThrow('boom');
+
+    expect(statements).toEqual(['BEGIN', 'INSERT 1', 'COMMIT', 'release', 'BEGIN', 'INSERT 2', 'ROLLBACK', 'release']);
+  });
 });

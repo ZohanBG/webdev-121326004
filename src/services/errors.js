@@ -20,3 +20,11 @@ export class NotSignedIn extends ServiceError {
     super('Sign in first.');
   }
 }
+
+/** Signed in, but this person may not do this. */
+export class Forbidden extends ServiceError {}
+
+export class NotFound extends ServiceError {}
+
+/** The request is fine, but it clashes with what is already in the database. */
+export class Conflict extends ServiceError {}

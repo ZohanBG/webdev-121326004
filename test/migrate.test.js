@@ -69,10 +69,10 @@ describe('bookings table', () => {
 });
 
 describe('seed', () => {
-  test('creates two users, three labs and six workstations, and runs only once', async () => {
+  test('creates three users, three labs and six workstations, and runs only once', async () => {
     db = new PGlite();
     await migrate(db);
-    expect(await seed(db, { password: 'long-enough-1' })).toEqual({ skipped: false, users: 2, labs: 3, workstations: 6 });
+    expect(await seed(db, { password: 'long-enough-1' })).toEqual({ skipped: false, users: 3, labs: 3, workstations: 6 });
     expect(await seed(db, { password: 'long-enough-1' })).toEqual({ skipped: true });
   });
 
