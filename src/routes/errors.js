@@ -1,7 +1,7 @@
 // The only place that turns an error into a status code.
 // Every error reaches the client as { "error": "<readable sentence>" }; none ever carries a stack trace (AC-44).
 import { join } from 'node:path';
-import { InvalidInput, WrongCredentials, NotSignedIn, Forbidden, NotFound, Conflict } from '../services/errors.js';
+import { InvalidInput, WrongCredentials, NotSignedIn, Forbidden, NotFound, Conflict, TooManyAttempts } from '../services/errors.js';
 
 const STATUS = [
   [InvalidInput, 400],
@@ -10,6 +10,7 @@ const STATUS = [
   [Forbidden, 403],
   [NotFound, 404],
   [Conflict, 409],
+  [TooManyAttempts, 429],
 ];
 
 export function notFound(req, res) {

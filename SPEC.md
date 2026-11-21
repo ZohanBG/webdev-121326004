@@ -41,6 +41,7 @@ Lab booking.
 - GET /api/features is public: it returns only the fixed feature labels, no user or database data.
 - At start-up the app checks its environment and stops, naming the variable but never its value: DATABASE_URL is required, and Sign in with Google needs GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and PUBLIC_BASE_URL together or none of them.
 - GET /health is public: it answers only {"status":"ok","db":"ok"} (200) or {"status":"error","db":"down"} (503), never versions, hosts or error text.
+- The app trusts exactly one proxy (`app.set('trust proxy', 1)`): on Render one proxy stands in front of it and appends the caller's address to `X-Forwarded-For`, so `req.ip` is that last entry, which a caller cannot forge. Trusting more hops would let a caller choose its own address; trusting none would make every caller the proxy. The sign-in limit (AC-45) counts per that address.
 
 ## The model feature
 <!-- Which model, which modality, and what it does for a user.
@@ -175,6 +176,9 @@ Trade-off: rendering in the browser means sequential round trips. The Day view m
 - [AC-43] A request to an unknown page answers 404: a "Page not found" HTML page for a browser, {"error":"Not found."} otherwise.
 - [AC-44] A request with broken JSON answers 400, a body over 10 kb answers 413, and an unexpected error answers 500 "Something went wrong on our side. Try again."; no response body ever contains a stack trace.
 
+### Exercise 5: fixes from the self-review
+- [AC-45] After 5 failed sign-ins for one email from one address within 15 minutes, a further sign-in for that email from that address, even with the right password, gets 429 "Too many sign-in attempts. Try again in 15 minutes." and no session cookie, until the failures are 15 minutes old; another address or another email is not affected, an unknown email is counted the same way, and a successful sign-in clears the count.
+
 ## Traceability
 <!-- Filled in from Exercise 3 onward: each AC id, and the test that names it. -->
 | Criterion | Test |
@@ -223,6 +227,7 @@ Trade-off: rendering in the browser means sequential round trips. The Day view m
 | AC-42 | `test/health.test.js` "AC-42 GET /health without a session answers 200 {"status":"ok","db":"ok"} when the database answers"<br>`test/health.test.js` "AC-42 GET /health answers 503 {"status":"error","db":"down"} when the query fails, and the body has no error details"<br>`test/health.test.js` "AC-42 GET /health answers 503 when the database does not answer within the time limit"<br>`test/health.test.js` "AC-42 the time limit is 5 seconds, and the log names only the error code, or its class when it has none"<br>`test/health.test.js` "AC-42 the pool survives a lost idle connection and gives up connecting after 5 seconds" |
 | AC-43 | `test/health.test.js` "AC-43 an unknown page answers 404 with a "Page not found" page for a browser"<br>`test/health.test.js` "AC-43 an unknown page answers 404 {"error":"Not found."} to any other client, like an unknown /api path" |
 | AC-44 | `test/health.test.js` "AC-44 broken JSON on a write route answers 400 with one sentence"<br>`test/health.test.js` "AC-44 a body over 10 kb answers 413 with one sentence, not 500"<br>`test/health.test.js` "AC-44 another mistake in the request itself keeps its 4xx status with one sentence"<br>`test/health.test.js` "AC-44 an unexpected error answers 500 "Something went wrong on our side. Try again." with no stack trace in the body" |
+| AC-45 | `test/signin-limit.test.js` "AC-45 S1 after 5 wrong passwords from one address, even the right password is refused for that email and address"<br>`test/signin-limit.test.js` "AC-45 S1 the lock is per email and address: another address, or another email, still signs in"<br>`test/signin-limit.test.js` "AC-45 S1 the lock ends 15 minutes after the failures"<br>`test/signin-limit.test.js` "AC-45 S1 an unknown email is counted the same way, so the answer does not reveal which accounts exist"<br>`test/signin-limit.test.js` "AC-45 S1 a successful sign-in clears the count; the email is matched without case or spaces"<br>`test/signin-limit.test.js` "AC-45 S1 an empty field is a 400 and is not counted as a failure"<br>`test/signin-limit.test.js` "AC-45 S1 the 6th sign-in from one address gets 429 with the sentence and no session cookie; another address is not locked"<br>`test/signin-limit.test.js` "AC-45 S1 an address the caller adds in front of the proxy\x27s own entry is ignored" |
 
 ## Spec vs result
 <!-- After the agent builds the slice: which criteria passed, which it missed or reinterpreted, and what you changed in this spec because of it. -->

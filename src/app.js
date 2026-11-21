@@ -25,6 +25,9 @@ import { notFound, notFoundPage, errorHandler } from './routes/errors.js';
 export function createApp({ db, secureCookies = false, now = () => new Date(), model = null, google = null, healthTimeoutMs }) {
   const app = express();
   app.disable('x-powered-by');
+  // Render puts exactly one proxy in front of the app, which appends the caller's address to X-Forwarded-For;
+  // trusting 1 hop makes req.ip that last entry, which a caller cannot forge (AC-45 counts per address).
+  app.set('trust proxy', 1);
   app.locals.db = db;
   app.locals.secureCookies = secureCookies;
   app.locals.now = now;

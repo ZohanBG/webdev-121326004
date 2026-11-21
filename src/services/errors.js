@@ -15,6 +15,13 @@ export class WrongCredentials extends ServiceError {
   }
 }
 
+/** Too many failed sign-ins for one email from one address (AC-45). */
+export class TooManyAttempts extends ServiceError {
+  constructor() {
+    super('Too many sign-in attempts. Try again in 15 minutes.');
+  }
+}
+
 export class NotSignedIn extends ServiceError {
   constructor() {
     super('Sign in first.');

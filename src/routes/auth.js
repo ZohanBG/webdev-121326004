@@ -5,7 +5,8 @@ import { setSessionCookie, clearSessionCookie, requireSignIn } from './session.j
 const router = express.Router();
 
 router.post('/login', async (req, res) => {
-  const { token, expiresAt, user } = await signIn(req.app.locals.db, req.body ?? {});
+  // req.ip is the caller's address as the proxy reports it (trust proxy 1, src/app.js)
+  const { token, expiresAt, user } = await signIn(req.app.locals.db, req.body ?? {}, { ip: req.ip, now: req.app.locals.now() });
   setSessionCookie(req, res, token, expiresAt);
   res.json({ user });
 });
