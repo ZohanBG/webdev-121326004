@@ -129,12 +129,18 @@ describe('Sign in with Google', () => {
 });
 
 describe('/account', () => {
-  test('changing an existing password needs the current one: 403 without it, 400 for a short new one', async () => {
+  test('AC-39 changing an existing password with a wrong current password gets 403 "Your current password is not right." and password_hash does not change; 400 for a short new one', async () => {
     await start(null);
     const { cookie } = await login(app.base);
     const post = (body) => fetch(`${app.base}/api/account/password`, {
       method: 'POST', headers: { 'Content-Type': 'application/json', cookie }, body: JSON.stringify(body),
     });
+    const hash = async () => (await db.query('SELECT password_hash FROM users WHERE email = $1', [STUDENT])).rows[0].password_hash;
+    const before = await hash();
+    const wrong = await post({ password: 'another-password-1', currentPassword: 'not-my-password' });
+    expect(wrong.status).toBe(403);
+    expect(await wrong.json()).toEqual({ error: 'Your current password is not right.' });
+    expect(await hash()).toBe(before);
     expect((await post({ password: 'another-password-1' })).status).toBe(403);
     expect((await post({ password: 'short', currentPassword: PASSWORD })).status).toBe(400);
     expect((await post({ password: 'another-password-1', currentPassword: PASSWORD })).status).toBe(204);

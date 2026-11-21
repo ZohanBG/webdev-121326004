@@ -30,7 +30,6 @@
   "homepage": "https://github.com/ZohanBG/webdev-121326004#readme",
   "private": true,
   "dependencies": {
-    "@anthropic-ai/sdk": "^1.12.0",
     "bcryptjs": "^3.0.3",
     "express": "^5.3.0",
     "pg": "^8.23.1"

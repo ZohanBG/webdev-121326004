@@ -84,12 +84,16 @@ describe('setting a password at /account', () => {
     expect(await getAccount(db, user)).toMatchObject({ hasPassword: true });
   });
 
-  test('AC-20 a password shorter than 10 characters is refused, and changing an existing password needs the current one', async () => {
+  test('AC-39 changing an existing password needs the current one (a wrong one is Forbidden and changes nothing), and a password shorter than 10 characters is refused', async () => {
     const student = await userByEmail(db, STUDENT);
+    const hashBefore = (await usersWith(STUDENT))[0].password_hash;
     await expect(setPassword(db, student, { password: 'short' }))
       .rejects.toMatchObject({ name: 'InvalidInput', message: 'The new password needs at least 10 characters.' });
     await expect(setPassword(db, student, { password: 'another-long-one' }))
       .rejects.toMatchObject({ name: 'Forbidden', message: 'Your current password is not right.' });
+    await expect(setPassword(db, student, { password: 'another-long-one', currentPassword: 'not-my-password' }))
+      .rejects.toMatchObject({ name: 'Forbidden', message: 'Your current password is not right.' });
+    expect((await usersWith(STUDENT))[0].password_hash).toBe(hashBefore);
     await setPassword(db, student, { password: 'another-long-one', currentPassword: PASSWORD });
     await expect(signIn(db, { email: STUDENT, password: 'another-long-one' })).resolves.toMatchObject({ user: { id: student.id } });
     await expect(setPassword(db, null, { password: 'x' })).rejects.toMatchObject({ name: 'NotSignedIn' });

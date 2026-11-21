@@ -114,7 +114,7 @@ describe('workstations', () => {
     expect(await labelsOn(TUE)).toContain('NL-01');
   });
 
-  test('AC-13 a workstation with upcoming bookings is refused with "Cancel its N upcoming bookings first." and stays in service', async () => {
+  test('AC-13 a workstation with upcoming bookings is refused with "Cancel its N upcoming booking(s) first." and stays in service', async () => {
     await createBooking(db, student, { workstationId: ws.NL01, date: TUE, block: 3 }, NOW);
     await expect(updateWorkstation(db, staff, ws.NL01, { inService: false }, NOW))
       .rejects.toMatchObject({ name: 'Conflict', message: 'Cancel its 1 upcoming booking first.' });

@@ -37,8 +37,8 @@ that talks to the database directly is a second, unguarded way into your data: n
 
 ## The model feature
 <!-- Provider, env var, and the call site. -->
-- The provider is named in exactly one file: `src/services/suggest.js` (Anthropic SDK, model id from `CLAUDE_MODEL`).
-- The key comes from an environment variable (`ANTHROPIC_API_KEY`) and is never committed or logged.
+- The provider is named in exactly one file: `src/services/suggest.js` (the Gemini API over plain `fetch`, model id from `GEMINI_MODEL`).
+- The key comes from an environment variable (`GEMINI_API_KEY`), is sent in the `x-goog-api-key` header (never in a URL), and is never committed or logged.
 - Every call has a timeout and a deterministic fallback, so the app still works when the provider is down or rate-limited.
 - The model's output is re-checked against real data before anything is saved or shown.
 - Tests never call the provider: they pass in a fake client.
@@ -65,7 +65,7 @@ that talks to the database directly is a second, unguarded way into your data: n
 - adding, renaming or removing an MCP tool
 - changing a coverage threshold
 - sending user data to a third-party model
-- calling the real Claude API (tests always use the fake client)
+- calling the real Gemini API (tests always use the fake client or a local stand-in)
 - running a migration against any database that isn't the local Docker one
 - changing or deleting an existing migration file
 - changing the test or coverage scripts in package.json

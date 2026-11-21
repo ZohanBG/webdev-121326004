@@ -12,7 +12,7 @@ describe('migrations', () => {
   test('apply to an empty database, and a second run applies nothing', async () => {
     db = new PGlite();
     const first = await migrate(db);
-    expect(first).toEqual(['001_users_labs_sessions.sql', '002_bookings.sql', '003_suggestion_requests.sql', '004_identities.sql']);
+    expect(first).toEqual(['001_users_labs_sessions.sql', '002_bookings.sql', '003_suggestion_requests.sql', '004_identities.sql', '005_gemini_outcomes.sql']);
     expect(await migrate(db)).toEqual([]);
 
     const { rows } = await db.query(

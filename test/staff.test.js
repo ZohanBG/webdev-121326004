@@ -94,7 +94,7 @@ describe('workstations', () => {
     expect(day.labs.flatMap((l) => l.workstations).map((w) => w.label)).not.toContain('NL-01');
   });
 
-  test('AC-13 a workstation with upcoming bookings is refused with 409 "Cancel its N upcoming bookings first." and stays in service', async () => {
+  test('AC-13 a workstation with upcoming bookings is refused with 409 "Cancel its N upcoming booking(s) first." and stays in service', async () => {
     await send(student, 'POST', '/api/bookings', { workstationId: ws.NL01, date: TUE, block: 3 });
     const res = await send(staff, 'PATCH', `/api/workstations/${ws.NL01}`, { inService: false });
     expect(res.status).toBe(409);

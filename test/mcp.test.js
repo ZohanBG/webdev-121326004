@@ -92,7 +92,7 @@ describe('the tools', () => {
       .toBe(`Suggestion, not booked: ${ws.NL03}:${TUE}:4  NL-03, Networks Lab (room 2140), ${TUE} 14:00–16:00, quiet, dual-monitor. Why: Quiet with two monitors. Call book_slot with ${ws.NL03}:${TUE}:4 to book it.`);
     expect((await db.query('SELECT count(*)::int AS n FROM bookings')).rows[0].n).toBe(0);
 
-    const noKey = await toolsAs(STUDENT, { env: { ANTHROPIC_API_KEY: '' } });
+    const noKey = await toolsAs(STUDENT, { env: { GEMINI_API_KEY: '' } });
     expect((await noKey.call('suggest_slot', { text: 'anything' })).text).toBe('Suggestions are not available right now. Pick a free slot from the list below.');
   });
 

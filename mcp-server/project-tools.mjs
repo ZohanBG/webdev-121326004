@@ -110,7 +110,7 @@ export function createProjectTools({ env = process.env, db: given, now = () => n
     },
 
     async suggest_slot({ text }) {
-      client ??= createModelClient({ apiKey: env.ANTHROPIC_API_KEY, model: env.CLAUDE_MODEL });
+      client ??= createModelClient({ apiKey: env.GEMINI_API_KEY, model: env.GEMINI_MODEL });
       const user = await caller();
       const { suggestion, message } = await suggestSlot(database(), user, { text }, { client, now: now() });
       if (!suggestion) return message;

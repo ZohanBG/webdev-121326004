@@ -169,50 +169,151 @@ describe('the daily limit and the rules before any call', () => {
 });
 
 describe('the real client', () => {
-  test('without ANTHROPIC_API_KEY there is no client, so the app runs on its fallback', () => {
+  test('without GEMINI_API_KEY there is no client, so the app runs on its fallback', () => {
     expect(createModelClient({ apiKey: '' })).toBeNull();
   });
 
-  // A local stand-in for the Messages API, so the real SDK can be exercised with no network and no cost.
+  // A local stand-in for the Gemini API, so the real client can be exercised with no network and no quota.
   async function standIn(status, body) {
     const received = [];
     const server = createServer((req, res) => {
       let raw = '';
       req.on('data', (chunk) => { raw += chunk; });
       req.on('end', () => {
-        received.push({ path: req.url, body: JSON.parse(raw) });
+        received.push({ path: req.url, key: req.headers['x-goog-api-key'], body: JSON.parse(raw) });
         res.writeHead(status, { 'content-type': 'application/json' });
         res.end(JSON.stringify(body));
       });
     });
     await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-    return { received, url: `http://127.0.0.1:${server.address().port}`, close: () => new Promise((r) => server.close(r)) };
+    return { received, url: `http://127.0.0.1:${server.address().port}/v1beta`, close: () => new Promise((r) => server.close(r)) };
   }
+  const geminiReply = (text, finishReason = 'STOP') => ({
+    candidates: [{ content: { role: 'model', parts: [{ text }] }, finishReason }],
+    usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 5 },
+  });
 
-  test('sends one message with thinking off and a 200-token cap, and returns the text and the stop reason', async () => {
-    const api = await standIn(200, {
-      id: 'msg_1', type: 'message', role: 'assistant', model: 'claude-haiku-5-5',
-      content: [{ type: 'text', text: '{"slotId":"1:2026-11-24:3","reason":"ok"}' }],
-      stop_reason: 'end_turn', stop_sequence: null, usage: { input_tokens: 10, output_tokens: 5 },
-    });
-    const client = createModelClient({ apiKey: 'test-key', model: 'claude-haiku-5-5', baseURL: api.url });
+  test('sends one generateContent request with the key in a header and a 200-token cap, and returns the text', async () => {
+    const api = await standIn(200, geminiReply('{"slotId":"1:2026-11-24:3","reason":"ok"}'));
+    const client = createModelClient({ apiKey: 'test-key', model: 'gemini-3.5-flash-lite', baseURL: api.url });
     const reply = await client.complete({ system: 'S', prompt: 'P' });
     await api.close();
 
     expect(reply).toEqual({ stopReason: 'end_turn', text: '{"slotId":"1:2026-11-24:3","reason":"ok"}' });
-    expect(api.received[0].path).toBe('/v1/messages');
-    expect(api.received[0].body).toMatchObject({
-      model: 'claude-haiku-5-5', max_tokens: 200, thinking: { type: 'disabled' }, system: 'S',
-      messages: [{ role: 'user', content: 'P' }],
+    expect(api.received[0].path).toBe('/v1beta/models/gemini-3.5-flash-lite:generateContent');
+    expect(api.received[0].key).toBe('test-key');
+    expect(api.received[0].path).not.toContain('test-key');
+    expect(api.received[0].body).toEqual({
+      systemInstruction: { parts: [{ text: 'S' }] },
+      contents: [{ role: 'user', parts: [{ text: 'P' }] }],
+      generationConfig: { maxOutputTokens: 200, responseMimeType: 'application/json' },
     });
   });
 
-  test('a 429 from the API reaches the service as a 429, with no retry', async () => {
-    const api = await standIn(429, { type: 'error', error: { type: 'rate_limit_error', message: 'slow down' } });
+  test('a reply cut off at the cap, a refusal and a blocked prompt come back as max_tokens, safety and blocked', async () => {
+    for (const [body, stopReason] of [
+      [geminiReply('{"slotId": "1:20', 'MAX_TOKENS'), 'max_tokens'],
+      [geminiReply('', 'SAFETY'), 'safety'],
+      [{ promptFeedback: { blockReason: 'SAFETY' } }, 'blocked'],
+      [{ candidates: [{ finishReason: 'OTHER' }] }, 'other'],
+    ]) {
+      const api = await standIn(200, body);
+      const reply = await createModelClient({ apiKey: 'test-key', baseURL: api.url }).complete({ system: 'S', prompt: 'P' });
+      await api.close();
+      expect(reply.stopReason).toBe(stopReason);
+    }
+  });
+
+  test('parts without text (a function call, a thought) are skipped, so only the answer text is read', async () => {
+    const api = await standIn(200, { candidates: [{ content: { parts: [{ functionCall: { name: 'x' } }, { text: '{"ok":' }, { text: 'true}' }] }, finishReason: 'STOP' }] });
+    const reply = await createModelClient({ apiKey: 'test-key', baseURL: api.url }).complete({ system: 'S', prompt: 'P' });
+    await api.close();
+    expect(reply).toEqual({ stopReason: 'end_turn', text: '{"ok":true}' });
+  });
+
+  test('AC-18 a 429 from the API (the shared free-tier quota) reaches the service as a 429, with no retry', async () => {
+    const api = await standIn(429, { error: { code: 429, status: 'RESOURCE_EXHAUSTED', message: 'quota' } });
     const client = createModelClient({ apiKey: 'test-key', baseURL: api.url });
     expect(await ask(client)).toEqual({ suggestion: null, message: FALLBACK });
     await api.close();
     expect(api.received).toHaveLength(1);
     expect(await outcomes()).toEqual(['429']);
+  });
+
+  test('AC-18 a 503 from the API (overloaded) shows the fallback and records "503"', async () => {
+    const api = await standIn(503, { error: { code: 503, status: 'UNAVAILABLE', message: 'overloaded' } });
+    const client = createModelClient({ apiKey: 'test-key', baseURL: api.url });
+    expect(await ask(client)).toEqual({ suggestion: null, message: FALLBACK });
+    await api.close();
+    expect(await outcomes()).toEqual(['503']);
+  });
+
+  test('the defaults read GEMINI_API_KEY and GEMINI_MODEL, falling back to gemini-3.5-flash-lite', () => {
+    const saved = { key: process.env.GEMINI_API_KEY, model: process.env.GEMINI_MODEL };
+    try {
+      process.env.GEMINI_API_KEY = 'from-env';
+      delete process.env.GEMINI_MODEL;
+      expect(createModelClient().model).toBe('gemini-3.5-flash-lite');
+      process.env.GEMINI_MODEL = 'gemini-3.6-flash';
+      expect(createModelClient().model).toBe('gemini-3.6-flash');
+    } finally {
+      for (const [name, value] of [['GEMINI_API_KEY', saved.key], ['GEMINI_MODEL', saved.model]]) {
+        if (value === undefined) delete process.env[name];
+        else process.env[name] = value;
+      }
+    }
+  });
+});
+
+describe('reading the reply, and what is logged', () => {
+  const capture = () => {
+    const lines = [];
+    return { lines, log: (line) => lines.push(line) };
+  };
+
+  test('AC-17 an answer wrapped in a one-item array, or with the workstation name after the slot id, is still read', async () => {
+    const slotId = `${ws.NL03}:${TUE}:4`;
+    for (const reply of [
+      answer([{ slotId, reason: 'Quiet with two monitors.' }]),
+      answer({ slotId: `${slotId} NL-03, Networks Lab`, reason: 'Quiet with two monitors.' }),
+    ]) {
+      const result = await ask(fakeModel(reply), undefined, capture());
+      expect(result.suggestion).toMatchObject({ slotId, workstation: 'NL-03' });
+    }
+    expect(await outcomes()).toEqual(['ok', 'ok']);
+  });
+
+  test('AC-18 a refused answer is logged with its outcome and a category, never the request or the answer', async () => {
+    const cases = [
+      [answer('Here you go!'), 'suggestion: invalid (not JSON)'],
+      [answer([1, 2]), 'suggestion: invalid (not a JSON object)'],
+      [answer({ slotId: 'NL-03 on Thursday', reason: 'x' }), 'suggestion: invalid (no slot id in slotId)'],
+      [answer({ slotId: '999:2026-11-24:3', reason: 'x' }), 'suggestion: invalid (a slot id that was not offered)'],
+      [answer({ slotId: `${ws.NL01}:${TUE}:3`, reason: 'secret words in the answer'.repeat(10) }), 'suggestion: invalid (no short plain-text reason)'],
+      [answer('{}', 'safety'), 'suggestion: invalid (stopped: safety)'],
+      [statusError(400), 'suggestion: error (status 400)'],
+      [new TypeError('fetch failed'), 'suggestion: error (TypeError)'],
+      [answer({ slotId: `${ws.NL01}:${TUE}:3`, reason: 'Free.' }), 'suggestion: ok'],
+    ];
+    for (const [reply, line] of cases) {
+      const { lines, log } = capture();
+      await ask(fakeModel(reply), 'my secret request text', { log });
+      expect(lines).toEqual([line]);
+      expect(lines.join(' ')).not.toMatch(/secret/);
+    }
+  });
+
+  test('AC-18 a slot booked while the model was thinking is logged as such', async () => {
+    const slotId = `${ws.NL01}:${TUE}:3`;
+    const { lines, log } = capture();
+    const client = {
+      model: 'fake',
+      complete: async () => {
+        await createBooking(db, await userByEmail(db, STUDENT2), { workstationId: ws.NL01, date: TUE, block: 3 }, NOW);
+        return answer({ slotId, reason: 'Free.' });
+      },
+    };
+    await ask(client, undefined, { log });
+    expect(lines).toEqual(['suggestion: invalid (the slot was booked meanwhile)']);
   });
 });
