@@ -18,6 +18,11 @@ export async function remove(db, id) {
   await db.query('DELETE FROM sessions WHERE id = $1', [id]);
 }
 
+/** Ends every session of a user except `keepId` (null keeps none), e.g. after a password change. */
+export async function removeOthersForUser(db, userId, keepId) {
+  await db.query('DELETE FROM sessions WHERE user_id = $1 AND id IS DISTINCT FROM $2', [userId, keepId]);
+}
+
 /** Ends every session of a user, e.g. when their password is cleared on linking. */
 export async function removeAllForUser(db, userId) {
   await db.query('DELETE FROM sessions WHERE user_id = $1', [userId]);

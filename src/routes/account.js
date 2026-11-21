@@ -8,7 +8,8 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/password', async (req, res) => {
-  await setPassword(req.app.locals.db, req.user, req.body);
+  // the session this change comes from stays; every other session of the account ends (AC-46)
+  await setPassword(req.app.locals.db, req.user, req.body, { keepToken: req.sessionToken });
   res.status(204).end();
 });
 
