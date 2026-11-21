@@ -44,6 +44,42 @@ export async function listActiveForUserFrom(db, userId, fromDate) {
   return rows;
 }
 
+/** For "my bookings": a user's bookings from a date on that are active, or that someone else (staff) cancelled. */
+export async function listForUserFrom(db, userId, fromDate) {
+  const { rows } = await db.query(
+    `SELECT ${COLUMNS}, w.label AS workstation, l.name AS lab
+       FROM bookings b JOIN workstations w ON w.id = b.workstation_id JOIN labs l ON l.id = w.lab_id
+      WHERE b.user_id = $1 AND b.date >= $2
+        AND (b.status = 'active' OR b.cancelled_by <> b.user_id)
+      ORDER BY b.date, b.block`,
+    [userId, fromDate],
+  );
+  return rows;
+}
+
+export async function listActiveForWorkstationFrom(db, workstationId, fromDate) {
+  const { rows } = await db.query(
+    `SELECT ${COLUMNS} FROM bookings b WHERE b.workstation_id = $1 AND b.date >= $2 AND b.status = 'active'`,
+    [workstationId, fromDate],
+  );
+  return rows;
+}
+
+/** For staff: every active booking on a date, with lab, workstation and the student's email. */
+export async function listActiveOnDateWithPeople(db, date) {
+  const { rows } = await db.query(
+    `SELECT ${COLUMNS}, w.label AS workstation, l.name AS lab, u.email
+       FROM bookings b
+       JOIN workstations w ON w.id = b.workstation_id
+       JOIN labs l ON l.id = w.lab_id
+       JOIN users u ON u.id = b.user_id
+      WHERE b.date = $1 AND b.status = 'active'
+      ORDER BY l.name, w.label, b.block`,
+    [date],
+  );
+  return rows;
+}
+
 /** Every active booking on one date: who holds which workstation in which block. */
 export async function listActiveOnDate(db, date) {
   const { rows } = await db.query(`SELECT ${COLUMNS} FROM bookings b WHERE b.date = $1 AND b.status = 'active'`, [date]);

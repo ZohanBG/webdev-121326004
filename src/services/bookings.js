@@ -4,7 +4,8 @@ import { transaction } from '../data/db.js';
 import * as bookings from '../data/bookings.js';
 import * as workstations from '../data/workstations.js';
 import * as users from '../data/users.js';
-import { InvalidInput, NotSignedIn, Forbidden, NotFound, Conflict } from './errors.js';
+import { InvalidInput, Forbidden, NotFound, Conflict } from './errors.js';
+import { requireUser, requireStaff } from './access.js';
 import { BLOCKS, blockTimes, hasStarted, isRealDate, isWeekday, lastBookableDate, today } from './time.js';
 
 const MAX_UPCOMING = 3;
@@ -20,10 +21,6 @@ const CLASH = {
   bookings_one_per_workstation: TAKEN,
   bookings_one_per_student: SAME_BLOCK,
 };
-
-function requireUser(user) {
-  if (!user) throw new NotSignedIn();
-}
 
 /** { workstationId, date, block } from a request body, or a 400 that names the field. */
 function parseSlot({ workstationId, date, block } = {}) {
@@ -76,7 +73,8 @@ export async function cancelBooking(db, user, bookingId, now = new Date()) {
   const id = Number(bookingId);
   const booking = Number.isInteger(id) && id > 0 ? await bookings.findById(db, id) : null;
   if (!booking) throw new NotFound('That booking does not exist.');
-  if (booking.userId !== user.id) throw new Forbidden('You can only cancel your own bookings.');
+  // staff may cancel anyone's booking (AC-28); a student only their own (AC-9)
+  if (booking.userId !== user.id && user.role !== 'staff') throw new Forbidden('You can only cancel your own bookings.');
   if (booking.status === 'cancelled') throw new Conflict('This booking is already cancelled.');
   if (hasStarted(booking.date, booking.block, now)) throw new Conflict('This booking has already started.');
 
@@ -108,11 +106,31 @@ export async function listDay(db, user, date, now = new Date()) {
   return { date, labs: [...labs.values()] };
 }
 
-/** The signed-in user's bookings that have not started yet, soonest first. */
+/**
+ * The signed-in user's bookings that have not started yet, soonest first, including any that
+ * lab staff cancelled, so the student finds out (AC-28). Their own cancellations are left out.
+ */
 export async function listMine(db, user, now = new Date()) {
   requireUser(user);
-  const rows = upcoming(await bookings.listActiveForUserFrom(db, user.id, today(now)), now);
+  const rows = upcoming(await bookings.listForUserFrom(db, user.id, today(now)), now);
   return rows.map((b) => ({
-    id: b.id, date: b.date, block: b.block, ...blockTimes(b.block), lab: b.lab, workstation: b.workstation, status: b.status,
+    id: b.id,
+    date: b.date,
+    block: b.block,
+    ...blockTimes(b.block),
+    lab: b.lab,
+    workstation: b.workstation,
+    status: b.status,
+    cancelledByStaff: b.status === 'cancelled',
+  }));
+}
+
+/** For staff: every active booking on a date, with the student's email, by lab and workstation. */
+export async function listAllForDay(db, user, date) {
+  requireStaff(user);
+  if (!isRealDate(date)) throw new InvalidInput(DATE_FORMAT);
+  const rows = await bookings.listActiveOnDateWithPeople(db, date);
+  return rows.map((b) => ({
+    id: b.id, date: b.date, block: b.block, ...blockTimes(b.block), lab: b.lab, workstation: b.workstation, email: b.email,
   }));
 }
