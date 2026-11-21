@@ -12,13 +12,13 @@ describe('migrations', () => {
   test('apply to an empty database, and a second run applies nothing', async () => {
     db = new PGlite();
     const first = await migrate(db);
-    expect(first).toEqual(['001_users_labs_sessions.sql', '002_bookings.sql', '003_suggestion_requests.sql']);
+    expect(first).toEqual(['001_users_labs_sessions.sql', '002_bookings.sql', '003_suggestion_requests.sql', '004_identities.sql']);
     expect(await migrate(db)).toEqual([]);
 
     const { rows } = await db.query(
       "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name",
     );
-    expect(rows.map((r) => r.table_name)).toEqual(['bookings', 'labs', 'schema_migrations', 'sessions', 'suggestion_requests', 'users', 'workstations']);
+    expect(rows.map((r) => r.table_name)).toEqual(['bookings', 'identities', 'labs', 'oauth_attempts', 'schema_migrations', 'sessions', 'suggestion_requests', 'users', 'workstations']);
   });
 
   test('a workstation feature outside the fixed list is refused by the database', async () => {

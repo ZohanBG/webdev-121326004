@@ -11,7 +11,7 @@ const NO_USER_HASH = bcrypt.hashSync(crypto.randomBytes(16).toString('hex'), 10)
 
 export const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 
-/** Checks email and password and opens a session. Returns the cookie value, which is never stored as is. */
+/** Checks email and password and opens a session. */
 export async function signIn(db, { email, password } = {}) {
   if (typeof email !== 'string' || !email.trim() || typeof password !== 'string' || !password) {
     throw new InvalidInput('Enter your email and password.');
@@ -21,6 +21,11 @@ export async function signIn(db, { email, password } = {}) {
   // an account with no password (Google only, or cleared on linking) cannot sign in with one
   if (!user || !user.password_hash || !matches) throw new WrongCredentials();
 
+  return openSession(db, user);
+}
+
+/** A new session for a user, by password or by a provider. Returns the cookie value, which is never stored as is. */
+export async function openSession(db, user) {
   const token = crypto.randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
   await sessions.insert(db, { id: hashToken(token), userId: user.id, expiresAt });

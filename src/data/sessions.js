@@ -17,3 +17,8 @@ export async function findUser(db, id) {
 export async function remove(db, id) {
   await db.query('DELETE FROM sessions WHERE id = $1', [id]);
 }
+
+/** Ends every session of a user, e.g. when their password is cleared on linking. */
+export async function removeAllForUser(db, userId) {
+  await db.query('DELETE FROM sessions WHERE user_id = $1', [userId]);
+}
