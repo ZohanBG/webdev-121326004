@@ -225,6 +225,12 @@ Changed during review (Променено при прегледа): Plan D appro
     - `git log -p --all | Select-String -Pattern 'AIza|sk-ant-|GOCSPX-|ghp_|github_pat_|BEGIN [A-Z ]*PRIVATE KEY' -AllMatches -CaseSensitive | ForEach-Object { $_.Matches.Value } | Group-Object | Select-Object Count, Name`
     - `git log -p --all | Select-String -Pattern 'postgres(ql)?://[^:@/ ]+:[^@ ]{0,4}' -AllMatches | ForEach-Object { $_.Matches.Value } | Group-Object | Select-Object Count, Name`
     - Committed steps 1 and 2, not pushed. Next: step 3 (Neon); I create the project and put the connection string in .env myself.
+  - Msg 5: I created the Neon project myself (Frankfurt, eu-central-1, direct connection, not the pooler, `sslmode=require&channel_binding=require`) and put its connection string in .env, with the Docker line commented out. The agent never read or printed .env; its command output had any URL or Neon host masked. Step 3 (Neon) done (stop, not committed):
+    - `npm run migrate` applied 001 to 006 on Neon; `npm run seed` added 3 users, 3 labs, 6 workstations. `channel_binding=require` caused no error (the pg library ignores it). pg prints a deprecation warning for `sslmode=require` (it is treated as verify-full; `sslmode=verify-full` in .env would silence it).
+    - Counted on Neon: schema_migrations 6, users 3, labs 3, workstations 6, bookings 0; active workstations per lab 2 (GPU Lab), 3 (Networks Lab), 0 (Project Room), as the seed defines.
+    - The dev server was restarted on Neon: /login 200, /api/labs without a session 401, and a wrong-password sign-in answers "Wrong email or password.", which needs a user lookup in Neon.
+    - Open: the seeded accounts (student@, staff@, student2@labspot.test) share SEED_PASSWORD and will be on the public site once Render uses this database. Before step 7: a strong SEED_PASSWORD, or remove the accounts there; also a known gap for READINESS.md if they stay. Still to do for step 3: create one record in the browser and see it in Neon's Tables view.
+  - Msg 6: Step 3 checked by hand: I booked one slot as the student and the row is in Neon's bookings table with status active. I keep the current SEED_PASSWORD on purpose; known gap for READINESS.md: the three seeded accounts on the public database share one password. Committed step 3, not pushed. Next: step 4 (/health, 404, errors), plan first.
 
 ### Plan E: steps 1 and 2 (no code until approved)
 Step 1:
