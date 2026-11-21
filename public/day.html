@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Day view · LabSpot</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/day.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/labs">LabSpot</a>
+    <nav id="nav" class="nav" aria-label="Main"></nav>
+    <button id="sign-out" class="secondary" type="button">Sign out</button>
+  </header>
+  <main>
+    <h1>Day view</h1>
+    <form id="day-picker" class="day-picker">
+      <button id="prev-day" class="secondary" type="button" aria-label="Previous weekday">‹</button>
+      <label for="date" class="visually-hidden">Date</label>
+      <input id="date" name="date" type="date" required>
+      <button id="next-day" class="secondary" type="button" aria-label="Next weekday">›</button>
+    </form>
+    <p id="day-heading" class="muted"></p>
+
+    <div id="day-notice" class="message" role="status" hidden></div>
+    <p id="day-status" class="muted" role="status">Loading the day…</p>
+    <div id="day-error" class="message error" role="alert" hidden>
+      <p id="day-error-text"></p>
+      <button id="day-retry" class="secondary" type="button">Try again</button>
+    </div>
+    <div id="day-content" hidden></div>
+  </main>
+</body>
+</html>

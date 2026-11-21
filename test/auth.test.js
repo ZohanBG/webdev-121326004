@@ -97,6 +97,26 @@ describe('pages', () => {
     expect(loginPage.headers.get('location')).toBe('/labs');
   });
 
+  test('/day and /my-bookings send a visitor to /login and open for a signed-in student', async () => {
+    const { cookie } = await login(app.base);
+    for (const path of ['/day', '/my-bookings']) {
+      const visitor = await fetch(`${app.base}${path}`, { redirect: 'manual' });
+      expect(visitor.status).toBe(302);
+      expect(visitor.headers.get('location')).toBe('/login');
+      const student = await fetch(`${app.base}${path}`, { headers: { cookie } });
+      expect(student.status).toBe(200);
+      expect(await student.text()).toMatch(/<title>.+ · LabSpot<\/title>/);
+    }
+  });
+
+  test('GET /api/auth/me returns the signed-in user, and 401 without a session', async () => {
+    const { cookie } = await login(app.base);
+    const me = await fetch(`${app.base}/api/auth/me`, { headers: { cookie } });
+    expect(me.status).toBe(200);
+    expect((await me.json()).user).toMatchObject({ email: STUDENT, role: 'student' });
+    expect((await fetch(`${app.base}/api/auth/me`)).status).toBe(401);
+  });
+
   test('an unknown API path gets 404 as JSON', async () => {
     const res = await fetch(`${app.base}/api/nothing-here`);
     expect(res.status).toBe(404);

@@ -10,7 +10,13 @@
   --color-on-primary: #ffffff;
   --color-error: #a3241c;
   --color-error-bg: #fdecea;
+  --color-success: #1d6b35;
+  --color-success-bg: #e6f4ea;
+  --color-taken-bg: #eceff3;
+  --color-yours-bg: #e3eefb;
   --color-focus: #08467f;
+
+  --touch-target: 44px;
 
   --space-1: 4px;
   --space-2: 8px;

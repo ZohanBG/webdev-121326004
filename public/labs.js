@@ -1,4 +1,5 @@
-import { api, signOut } from './api.js';
+import { api } from './api.js';
+import { renderNav } from './nav.js';
 
 const status = document.querySelector('#labs-status');
 const errorBox = document.querySelector('#labs-error');
@@ -45,6 +46,6 @@ async function load() {
   list.hidden = false;
 }
 
-document.querySelector('#sign-out').addEventListener('click', signOut);
 document.querySelector('#labs-retry').addEventListener('click', load);
+await renderNav();
 load();
