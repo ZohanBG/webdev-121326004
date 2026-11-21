@@ -14,6 +14,11 @@ export async function findUser(db, id) {
   return rows[0] ?? null;
 }
 
+/** Sessions past their expiry are never used again (findUser filters them), so they are not kept. */
+export async function removeExpired(db) {
+  await db.query('DELETE FROM sessions WHERE expires_at <= now()');
+}
+
 export async function remove(db, id) {
   await db.query('DELETE FROM sessions WHERE id = $1', [id]);
 }

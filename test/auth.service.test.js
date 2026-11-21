@@ -1,6 +1,7 @@
 // The sign-in rules, called directly on the service: no HTTP involved.
 import { describe, test, expect, beforeAll, afterAll } from 'vitest';
-import { signIn, signOut, userForSession, hashToken } from '../src/services/auth.js';
+import { signIn, signOut, userForSession, hashToken, openSession } from '../src/services/auth.js';
+import { userByEmail } from './helpers.js';
 import { freshDb, PASSWORD, STUDENT } from './helpers.js';
 
 let db;
@@ -53,5 +54,14 @@ describe('auth service', () => {
     const { token } = await signIn(db, { email: STUDENT, password: PASSWORD });
     await db.query("UPDATE sessions SET expires_at = now() - interval '1 minute' WHERE id = $1", [hashToken(token)]);
     expect(await userForSession(db, token)).toBeNull();
+  });
+
+  test('S7 opening a session deletes the sessions that have expired, and keeps the others', async () => {
+    const user = await userByEmail(db, STUDENT);
+    await db.query("INSERT INTO sessions (id, user_id, expires_at) VALUES ('expired-session', $1, now() - interval '1 minute')", [user.id]);
+    const live = await openSession(db, user);
+    const { rows } = await db.query("SELECT id FROM sessions WHERE id = 'expired-session'");
+    expect(rows).toEqual([]);
+    expect(await userForSession(db, live.token)).toMatchObject({ email: STUDENT });
   });
 });

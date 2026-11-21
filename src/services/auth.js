@@ -47,6 +47,8 @@ export async function signIn(db, { email, password } = {}, { ip = 'unknown', now
 export async function openSession(db, user) {
   const token = crypto.randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
+  // S7: every new session also clears the expired ones, so the table does not only grow
+  await sessions.removeExpired(db);
   await sessions.insert(db, { id: hashToken(token), userId: user.id, expiresAt });
   return { token, expiresAt, user: { id: user.id, email: user.email, role: user.role } };
 }
