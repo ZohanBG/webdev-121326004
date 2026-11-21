@@ -28,8 +28,8 @@ export async function workstationIds(db) {
   return Object.fromEntries(rows.map((r) => [r.label.replace('-', ''), r.id]));
 }
 
-export async function startApp(db) {
-  const app = createApp({ db });
+export async function startApp(db, options = {}) {
+  const app = createApp({ db, ...options });
   const server = await new Promise((resolve) => {
     const s = app.listen(0, '127.0.0.1', () => resolve(s));
   });
