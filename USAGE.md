@@ -7,6 +7,6 @@ One row per agent session. In Gemini CLI, type `/stats` before you quit and copy
 | 2026-10-14 | Claude Code (Opus 5.5), Exercise 1 | 4 702 093 | 37 671 | | $2.36 |
 | 2026-10-14 | GitHub Copilot (Auto, gpt-5.6-luna), description experiment | | | 0.7 | |
 | 2026-11-11 | Claude Code (Opus 5.5, plus Haiku 5.5 web-fetch subagents), Exercise 2 spec and Exercise 3 Slice 1 | 34 734 738 | 221 638 | | $13.59 |
-| 2026-11-21 | Claude Code (Opus 5.5, plus a Haiku 5.5 web-fetch subagent), Exercise 3: slices 2 to 7, the Gemini switch and the visual pass (so far) | 186 789 485 | 600 182 | | $58.39 |
+| 2026-11-21 | Claude Code (Opus 5.5, plus a Haiku 5.5 web-fetch subagent), Exercise 3: slices 2 to 7, the Gemini switch and the visual pass (so far) | 190 112 573 | 603 952 | | $59.16 |
 
 Price list: Anthropic API list prices per 1M tokens. Claude Opus 5.5: $4 input, $20 output, $0.20 cache read, $8 cache write (1-hour). Claude Haiku 5.5: $0.10 input, $0.50 output. I use Claude Code on a Claude Max subscription, so these sessions cost nothing extra; the cost column is what the same tokens would cost on the API. Claude Code has no per-session token counter on a subscription, so the token numbers are summed from the session transcript (`usage` of every model reply). Input includes cached input: almost all of it is cache reads (4.6M of 4.7M in Exercise 1), because every reply re-reads the conversation so far. The Copilot credits are from the two runs that showed a count (0.6 + 0.1).
